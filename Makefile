@@ -5,7 +5,7 @@ CFLAGS=-ggdb
 LIBS=
 PARSER=parser
 SCANNER=scanner
-OBJS=$(SCANNER).o $(PARSER).o symbol_table.o ast.o
+OBJS=$(SCANNER).o $(PARSER).o symbol_table.o ast.o base.o
 PROGRAM=toypasc
 
 all: $(OBJS)
@@ -13,6 +13,9 @@ all: $(OBJS)
 
 symbol_table.o: symbol_table.c symbol_table.h
 	$(CC) $(CFLAGS) symbol_table.c -c
+
+base.o: base.c base.h
+	$(CC) $(CFLAGS) base.c -c
 
 ast.o: ast.c ast.h
 	$(CC) $(CFLAGS) ast.c -c

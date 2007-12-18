@@ -6,58 +6,54 @@
 Symbol *
 symbol_new(char const * name)
 {
-
     Symbol * symbol = (Symbol *) malloc (sizeof(Symbol));
+    symbol->type = NONE_TYPE;
+    value_set(&symbol->value, symbol->type, NULL);
     symbol->next = NULL;
-    
-    if (name != NULL){
-        
-        symbol->name =  (char *) malloc (sizeof(char)*strlen(name));
-        strcpy (symbol->name, name);
-    
-    } else {
-        
-        symbol->name = NULL;        
-    
-    }
-    
-    return symbol;    
 
+    if (name != NULL)
+        symbol->name = strdup(name);
+     else
+        symbol->name = NULL;
+
+    return symbol;
 }
 
 
 Symbol *
-symbol_insert(Symbol * table, char const * name, int type)
+symbol_insert(Symbol *table, char const *name)
 {
     Symbol *symbol;
 
-    symbol = symbol_new(name);
-    symbol->type = type;
+    /*if (symbol == NULL) {
+        fprintf(stderr, "symbol_table.c: symbol_insert: symbol == NULL\n");
+        exit(1);
+    }*/
+
+    symbol = symbol_lookup(table, name);
+
+    if (symbol == NULL)
+        symbol = symbol_new(name);
+
     symbol->next = table;
+
     return symbol;
-    
 }
 
 Symbol *
-symbol_lookup(Symbol * table, char const * name)
+symbol_lookup(Symbol *table, char const *name)
 {
     Symbol *temp;
     temp = table;
-    
-    while(temp != NULL){
-    
-        if(!strcmp (temp->name, name)){
-    
-            return temp;   
-    
-        }
-    
-        temp = temp->next;  
-    
-    }
-    
-    return temp;
 
+    while (temp != NULL) {
+        if (!strcmp (temp->name, name))
+            return temp;
+
+        temp = temp->next;
+    }
+
+    return temp;
 }
 
 void
@@ -68,14 +64,13 @@ symbol_table_destroy(Symbol **table)
     first = *table;
     *table = NULL;
 
-    while(first != NULL){
+    while (first != NULL) {
         to_kill = first;
         first = first->next;
         free(to_kill);
     }
 
     free(first);
-
 }
 
 void
@@ -85,7 +80,7 @@ symbol_print(Symbol *symbol)
         printf("NULL\n");
         return;
     }
-    
+
     printf("Symbol: %x\n", symbol);
     printf("%s\n", symbol->name);
     printf("%d\n", symbol->type);

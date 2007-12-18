@@ -1,23 +1,27 @@
 #ifndef SYMBOL_TABLE_H
 #define SYMBOL_TABLE_H
 
+#include "base.h"
+
+#define symbol_table_init() sym_table = NULL
+
 typedef struct _symbol {
     char *name;
-    int type;
-
-    union {
-        int integer;
-        int boolean;
-        char character;
-    } value;
-
+    Type type;
+    Value value;
+    //Scope
     struct _symbol *next;
 } Symbol;
 
-Symbol *symbol_insert(Symbol *table, char const *name, int type);
+static Symbol *sym_table;
+
+Symbol *symbol_new(char const * name);
+Symbol *symbol_insert(Symbol *table, char const *name);
 Symbol *symbol_lookup(Symbol *table, char const *name);
+//symbol_get_scope, parent_scope, etc....
+
 void symbol_table_destroy(Symbol **table);
-void symbol_print(Symbol *symbol);
 void symbol_table_dump(Symbol *table);
+void symbol_print(Symbol *symbol);
 
 #endif // SYMBOL_TABLE_H

@@ -1,92 +1,61 @@
+#include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "symbol_table.h"
-
-void
-symbol_table_destroy(Symbol * table)
-{
-    Symbol * first, second;
-    first = table;
-        
-    while(first != NULL){
-    
-        second = first;
-        first = first->next;
-        free(second);
-            
-    }
-    
-    free(first);
-    free(second);
-
-}
-
-char *
-symbol_table_dump(Symbol table)
-{
-
-    Symbol * temp;
-    temp = table;
-     
-    while(temp =! NULL){
-    
-        printf("%s\n", temp->name);
-        printf("%d\n", temp->type);
-        temp = temp->next;
-    
-    }
-    
-    free(temp);   
-
-}
 
 Symbol *
 symbol_insert(Symbol * table, char const * name, int type)
 {
+    Symbol *symbol;
 
-    Symbol * symbol = (Symbol *) malloc (sizeof(Symbol));
+    symbol = (Symbol *) malloc (sizeof(Symbol));
     symbol->next = table;
-    strcpy (symbol->name,name);
+    strcpy (symbol->name, name);
     symbol->type = type;
     return symbol;
-
 }
 
 Symbol *
 symbol_lookup(Symbol * table, char const * name)
 {
-    
-    Symbol * temp;
+    Symbol *temp;
     temp = table;
-     
-    while(strcmp (temp->name,name) && temp != NULL){
-    
+
+    while(strcmp (temp->name, name) && temp != NULL){
         temp = temp->next;
-    
     }
-    
+
     return temp;
-    
 }
 
-int
-symbol_exists(Symbol * table, char const * name)
+void
+symbol_table_destroy(Symbol *table)
 {
+    Symbol *first;
+    Symbol *second;
+    first = table;
 
-    Symbol * temp;
-    temp = table;
-     
-    while(temp != NULL){
-    
-        if(strcmp (temp->name,name)){
-        
-            return 1;
-        
-        }
-    
+    while(first != NULL){
+        second = first;
+        first = first->next;
+        free(second);
     }
-        
-    return 0;
 
+    free(first);
+    free(second);
 }
 
+void
+symbol_table_dump(Symbol *table)
+{
+    Symbol *temp;
+    temp = table;
 
+    while(temp != NULL){
+        printf("%s\n", temp->name);
+        printf("%d\n", temp->type);
+        temp = temp->next;
+    }
+
+    free(temp);
+}

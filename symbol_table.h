@@ -16,7 +16,7 @@ typedef struct _symbol {
 
 Symbol *symbol_insert(Symbol *table, char const *name, int type);
 Symbol *symbol_lookup(Symbol *table, char const *name);
-void symbol_table_destroy(Symbol *table);
+void symbol_table_destroy(Symbol **table);
 void symbol_print(Symbol *symbol);
 void symbol_table_dump(Symbol *table);
 

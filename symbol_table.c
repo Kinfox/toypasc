@@ -33,6 +33,7 @@ symbol_insert(Symbol * table, char const * name, int type)
 
     symbol = symbol_new(name);
     symbol->type = type;
+    symbol->next = table;
     return symbol;
     
 }
@@ -60,16 +61,17 @@ symbol_lookup(Symbol * table, char const * name)
 }
 
 void
-symbol_table_destroy(Symbol *table)
+symbol_table_destroy(Symbol **table)
 {
     Symbol *first;
-    Symbol *second;
-    first = table;
+    Symbol *to_kill;
+    first = *table;
+    *table = NULL;
 
     while(first != NULL){
-        second = first;
+        to_kill = first;
         first = first->next;
-        free(second);
+        free(to_kill);
     }
 
     free(first);

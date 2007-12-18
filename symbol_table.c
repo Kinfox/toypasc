@@ -4,21 +4,37 @@
 void
 symbol_table_destroy(Symbol * table)
 {
-    Symbol * temp;
-
-    while(table->next != NULL){
+    Symbol * prev, next;
+    prev = table;
+    next = table->next;
     
-        table
+    while(temp->next != NULL){
+    
+        free(prev);
+        prev = next->next;
+        free(next);
+        next = prev->next;
     
     }
 
 }
 
 char *
-symbol_table_dump(void)
+symbol_table_dump(Symbol table)
 {
 
+    Symbol * temp;
+    temp = table;
+     
+    while(temp =! NULL){
     
+        printf("%s\n", temp->name);
+        printf("%d\n", temp->type);
+        temp = temp->next;
+    
+    }
+    
+    free(temp);   
 
 }
 
@@ -35,10 +51,21 @@ symbol_insert(Symbol * table, char const * name, int type)
 }
 
 Symbol *
-symbol_lookup(char const * name)
+symbol_lookup(Symbol * table, char const * name)
 {
-
-        
+    
+    Symbol * temp;
+    temp = table;
+     
+    while(temp =! NULL){
+    
+        printf("%s\n", temp->name);
+        printf("%d\n", temp->type);
+        temp = temp->next;
+    
+    }
+    
+    free(temp);
     
 }
 

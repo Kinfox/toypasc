@@ -2,6 +2,7 @@
 #define SYMBOL_TABLE_H
 
 typedef struct _symbol {
+    	    
     char *name;
     int type;
 
@@ -14,11 +15,10 @@ typedef struct _symbol {
     struct _symbol *next;
 } Symbol;
 
-Symbol *symbol_table_new(void);
-void symbol_table_destroy(void);
-char *symbol_table_dump(void);
-Symbol *symbol_insert(char const * name, int type);
-Symbol *symbol_lookup(char const * name);
-int symbol_exists(char const * name);
+void symbol_table_destroy(Symbol * table, );
+char *symbol_table_dump(Symbol * table, );
+Symbol *symbol_insert(Symbol * table, char const * name, int type);
+Symbol *symbol_lookup(Symbol * table, char const * name);
+int symbol_exists(Symbol * table, char const * name);
 
 #endif // SYMBOL_TABLE_H

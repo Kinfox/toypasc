@@ -1,2 +1,7 @@
 Var x : Integer;
-x := 10;
+Var y : Boolean;
+Var z : Char;
+
+Begin
+    x := 10;
+End.

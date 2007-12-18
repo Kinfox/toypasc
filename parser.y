@@ -72,32 +72,36 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %token T_COMMA
 %token T_DOT
 
-%token <lexeme> TYPE_IDENTIFIER
+%token <type> TYPE_IDENTIFIER
 %token <lexeme> IDENTIFIER
 %token <integer> INT_LITERAL
 %token <boolean> BOOL_LITERAL
 %token <character> CHAR_LITERAL
 
 %type <astnode> Program
+%type <astnode> VarDeclList
 %type <astnode> VarDecl
+%type <astnode> ProcFuncList
+%type <astnode> MainCodeBlock
+%type <astnode> CodeBlock
+
 %type <astnode> Assignment
 %type <astnode> Identifier
-
+%type <astnode> SimpleType
 %type <astnode> Literal
-
-%type <type> SimpleType
 
 %start Program
 
 %%
 Program:
-    VarDecl Assignment
+    VarDeclList ProcFuncList MainCodeBlock
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("Program", 0, -1,
+        ast_node = ast_node_new("Program", -1, -1,
                                 yylloc.last_line, NULL);
         ast_node->children[0] = $1;
         ast_node->children[1] = $2;
+        ast_node->children[2] = $3;
         $$ = ast_node;
 
         //ast_node_print(ast_node);
@@ -106,11 +110,20 @@ Program:
     }
     ;
 
+VarDeclList:
+    /* empty */ { $$ = NULL; }
+    | VarDeclList VarDecl
+    {
+        ((struct AstNode *) $2)->next = (struct AstNode *) $1;
+        $$ = $2;
+    }
+    ;
+
 VarDecl:
     T_VAR Identifier T_COLON SimpleType T_SEMICOLON
     {
-       struct AstNode *ast_node;
-        ast_node = ast_node_new("VarDecl", 0, -1,
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("VarDecl", -1, -1,
                                 yylloc.last_line, NULL);
         ast_node->children[0] = $2;
         //ast_node->children[1] = $4;
@@ -118,14 +131,31 @@ VarDecl:
     }
     ;
 
+ProcFuncList:
+    /* empty */ { $$ = NULL;  }
+    ;
+
+MainCodeBlock:
+    /* empty */ { $$ = NULL; }
+    | CodeBlock T_DOT { $$ = $1; }
+    ;
+
+CodeBlock:
+    T_BEGIN Assignment T_END
+    {
+        $$ = $2;
+    }
+    ;
+
 Assignment:
     Identifier T_ASSIGNMENT Literal T_SEMICOLON
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("Assignment", T_ASSIGNMENT, -1,
+        ast_node = ast_node_new("Assignment", -1, -1,
                                 yylloc.last_line, NULL);
         ast_node->children[0] = $1;
         ast_node->children[1] = $3;
+        ast_node_print($3);
         $$ = ast_node;
     }
     ;
@@ -133,11 +163,12 @@ Assignment:
 SimpleType:
     TYPE_IDENTIFIER
     {
-        /*struct AstNode *ast_node;
-        //Symbol *symbol = (Symbol *) malloc (sizeof(Symbol));
-        ast_node = ast_node_new("SimpleType", IDENTIFIER, -1,
+       struct AstNode *ast_node;
+        ast_node = ast_node_new("SimpleType", -1, -1,
                                 yylloc.last_line, NULL);
-        $$ = ast_node;*/
+        //ast_node->children[0] = $2;
+        //ast_node->children[1] = $4;
+        $$ = ast_node;
     }
     ;
 
@@ -150,7 +181,7 @@ Identifier:
         sym_table = symbol_insert(sym_table, $1);
         symbol = sym_table;
 
-        ast_node = ast_node_new("Identifier", IDENTIFIER, -1,
+        ast_node = ast_node_new("Identifier", -1, -1,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
@@ -162,7 +193,22 @@ Literal:
         struct AstNode *ast_node;
         ast_node = ast_node_new("Literal", INT_LITERAL, INTEGER,
                                 yylloc.last_line, NULL);
-
+        value_set_from_int(&ast_node->value, $1);
+        $$ = ast_node;
+    }
+    | BOOL_LITERAL
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("Literal", BOOL_LITERAL, BOOLEAN,
+                                yylloc.last_line, NULL);
+        value_set_from_int(&ast_node->value, $1);
+        $$ = ast_node;
+    }
+    | CHAR_LITERAL
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("Literal", CHAR_LITERAL, CHAR,
+                                yylloc.last_line, NULL);
         value_set_from_int(&ast_node->value, $1);
         $$ = ast_node;
     }

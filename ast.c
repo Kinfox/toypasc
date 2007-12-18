@@ -61,8 +61,9 @@ ast_node_print(struct AstNode *node)
     printf("(AstNode) %x : %s\n", node, node->name);
     printf("kind: %d\n", node->kind);
     printf("type: %d\n", node->type);
+    printf("value: ");
     value_print(&node->value, node->type);
-    printf("linenum: %d\n", node->linenum);
+    printf("\nlinenum: %d\n", node->linenum);
     printf("symbol: %x\n", node->symbol);
 
     printf("Sibling: %x\n", node->next);

@@ -69,8 +69,24 @@ symbol_lookup(Symbol * table, char const * name)
 }
 
 int
-symbol_exists(char const * name)
+symbol_exists(Symbol * table, char const * name)
 {
+
+    Symbol * temp;
+    temp = table;
+     
+    while(temp != NULL){
+    
+        if(strcmp (temp->name,name)){
+        
+            return 1;
+        
+        }
+    
+    }
+        
+    return 0;
+
 }
 
 

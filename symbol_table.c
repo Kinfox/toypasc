@@ -4,18 +4,19 @@
 void
 symbol_table_destroy(Symbol * table)
 {
-    Symbol * prev, next;
-    prev = table;
-    next = table->next;
+    Symbol * first, second;
+    first = table;
+        
+    while(first != NULL){
     
-    while(temp->next != NULL){
-    
-        free(prev);
-        prev = next->next;
-        free(next);
-        next = prev->next;
-    
+        second = first;
+        first = first->next;
+        free(second);
+            
     }
+    
+    free(first);
+    free(second);
 
 }
 
@@ -57,15 +58,13 @@ symbol_lookup(Symbol * table, char const * name)
     Symbol * temp;
     temp = table;
      
-    while(temp =! NULL){
+    while(strcmp (temp->name,name) && temp != NULL){
     
-        printf("%s\n", temp->name);
-        printf("%d\n", temp->type);
         temp = temp->next;
     
     }
     
-    free(temp);
+    return temp;
     
 }
 

@@ -3,16 +3,35 @@
 #include <stdlib.h>
 #include "symbol_table.h"
 
+Symbol *
+symbol_new(char const * name)
+{
+
+    Symbol * symbol = (Symbol *) malloc (sizeof(Symbol));
+    symbol->next = NULL;
+    
+    if (name != NULL){
+        
+        symbol->name =  (char *) malloc (sizeof(char)*strlen(name));
+        strcpy (symbol->name, name);
+    
+    } else {
+        
+        symbol->name = NULL;        
+    
+    }
+    
+    return symbol;    
+
+}
+
 
 Symbol *
 symbol_insert(Symbol * table, char const * name, int type)
 {
     Symbol *symbol;
 
-    symbol = (Symbol *) malloc (sizeof(Symbol));
-    symbol->next = table;
-    symbol->name =  (char *) malloc (sizeof(char)*strlen(name));
-    strcpy (symbol->name, name);
+    symbol = symbol_new(name);
     symbol->type = type;
     return symbol;
     
@@ -26,7 +45,7 @@ symbol_lookup(Symbol * table, char const * name)
     
     while(temp != NULL){
     
-        if(strcmp (temp->name, name)){
+        if(!strcmp (temp->name, name)){
     
             return temp;   
     
@@ -54,7 +73,7 @@ symbol_table_destroy(Symbol *table)
     }
 
     free(first);
-    free(second);
+
 }
 
 void

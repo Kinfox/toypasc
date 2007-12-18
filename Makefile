@@ -6,7 +6,7 @@ LIBS=
 PARSER=parser
 SCANNER=scanner
 OBJS=$(SCANNER).o $(PARSER).o symbol_table.o ast.o
-PROGRAM=plminus
+PROGRAM=toypasc
 
 all: $(OBJS)
 	$(CC) $(LIBS) $(OBJS) -o $(PROGRAM)

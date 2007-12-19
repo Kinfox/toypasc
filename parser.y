@@ -96,6 +96,7 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %type <astnode> Statement
 %type <astnode> WhileStatement
 %type <astnode> Expression
+%type <astnode> ForStatement
 
 %type <astnode> Assignment
 %type <astnode> Identifier
@@ -242,6 +243,7 @@ StatementList:
 Statement:
     Assignment { $$ = $1; }
     | WhileStatement { $$ = $1; }
+    | ForStatement { $$ = $1; }
     ;
 
 Assignment:
@@ -269,8 +271,23 @@ WhileStatement:
     }
     ;
     
+ForStatement:
+    T_FOR Identifier T_ASSIGNMENT Expression T_TO Expression T_DO CodeBlock
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("ForStatement", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node->children[0] = $2;
+        ast_node->children[1] = $4;
+        ast_node->children[2] = $6;
+        ast_node->children[3] = $8;
+        $$ = ast_node;
+    }
+    ;
+    
 Expression:
     /* empty */ { $$ = NULL; }
+    | Literal { $$ = $1; }
     ;
     
 SimpleType:

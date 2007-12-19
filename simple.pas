@@ -1,9 +1,9 @@
-Var x : Integer;
-Var y : Char;
-Var z : Boolean;
-
+Var
+   i: Integer;
+ 
 Begin
-    x := 10;
-    y := 11;
-    z := 12;
+   while (i <= 10) do
+      Begin
+         i := 1;
+      End
 End.

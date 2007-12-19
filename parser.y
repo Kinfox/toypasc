@@ -45,6 +45,7 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %token T_END
 
 %token T_IF
+%token T_THEN
 %token T_ELSE
 %token T_WHILE
 %token T_FOR
@@ -95,10 +96,15 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %type <astnode> StatementList
 %type <astnode> MultiStatement
 %type <astnode> Statement
+%type <astnode> IfStatement
 %type <astnode> WhileStatement
 %type <astnode> ForStatement
 
 %type <astnode> Expression
+%type <astnode> SimpleExpression
+%type <astnode> NFactor
+%type <astnode> Factor
+%type <astnode> Term
 
 %type <astnode> Call
 %type <astnode> CallParamList
@@ -109,13 +115,10 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %type <astnode> SimpleType
 %type <astnode> Literal
 
-%type <integer> BinaryOp
 %type <integer> AddOp
 %type <integer> MulOp
 %type <integer> RelOp
 %type <integer> UnaryOp
-%type <integer> NotOp
-%type <integer> NegOp
 
 %start Program
 
@@ -131,14 +134,15 @@ Program:
         ast_node_add_child(ast_node, $3);
         $$ = ast_node;
 
-        ast_node_print(ast_node);
+        //ast_node_print(ast_node);
         //symbol_table_dump(sym_table);
-        //ast_node_print_graph(ast_node);
+        ast_node_print_graph(ast_node);
     }
     ;
 
 VarDeclList:
-    MultiVarDecl
+    /* empty */ { $$ = NULL; }
+    | MultiVarDecl
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("VarDeclList", -1, -1,
@@ -318,30 +322,116 @@ MultiStatement:
     ;
 
 Statement:
-    Assignment { $$ = $1; }
+    Assignment T_SEMICOLON { $$ = $1; }
+    | IfStatement { $$ = $1; }
     | WhileStatement { $$ = $1; }
     | ForStatement { $$ = $1; }
+    | Call { $$ = $1; }
     ;
 
-Expression:
-    Expression BinaryOp Expression
+Assignment:
+    Identifier T_ASSIGNMENT Expression
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("BinaryExpression", $2, -1,
+        ast_node = ast_node_new("Assignment", -1, -1,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $3);
         $$ = ast_node;
     }
-    | UnaryOp Expression
+    ;
+
+IfStatement:
+    T_IF Expression T_THEN CodeBlock T_ELSE CodeBlock
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("UnaryExpression", $1, -1,
+        ast_node = ast_node_new("IfStatement", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $2);
+        ast_node_add_child(ast_node, $4);
+        ast_node_add_child(ast_node, $6);
+        $$ = ast_node;
+    }
+    ;
+
+WhileStatement:
+    T_WHILE T_LPAR Expression T_RPAR T_DO CodeBlock
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("WhileStatement", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $3);
+        ast_node_add_child(ast_node, $6);
+        $$ = ast_node;
+    }
+    ;
+
+ForStatement:
+    T_FOR Assignment T_TO Expression T_DO CodeBlock
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("ForStatement", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $2);
+        ast_node_add_child(ast_node, $4);
+        ast_node_add_child(ast_node, $6);
+        $$ = ast_node;
+    }
+    ;
+
+Expression:
+    SimpleExpression { $$ = $1; }
+    | SimpleExpression RelOp SimpleExpression
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("RelExpression", $2, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $1);
+        ast_node_add_child(ast_node, $3);
+        $$ = ast_node;
+    }
+    ;
+
+SimpleExpression:
+    Term { $$ = $1; }
+    | SimpleExpression AddOp Term
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("AddExpression", $2, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $1);
+        ast_node_add_child(ast_node, $3);
+        $$ = ast_node;
+    }
+    ;
+
+Term:
+    NFactor { $$ = $1; }
+    | Term MulOp NFactor
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("MulExpression", $2, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $1);
+        ast_node_add_child(ast_node, $3);
+        $$ = ast_node;
+    }
+    ;
+
+NFactor:
+    Factor { $$ = $1; }
+    | UnaryOp Factor
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("NFactor", $1, -1,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);
         $$ = ast_node;
     }
-    | Identifier { $$ = $1; }
+    ;
+
+Factor:
+    Identifier { $$ = $1; }
     | Literal { $$ = $1; }
     | Call { $$ = $1; }
     | T_LPAR Expression T_RPAR { $$ = $2; }
@@ -380,12 +470,6 @@ MultiCallParam:
     }
     ;
 
-BinaryOp:
-    AddOp { $$ = $1; }
-    | MulOp { $$ = $1; }
-    | RelOp { $$ = $1; }
-    ;
-
 AddOp:
     T_PLUS { $$ = T_PLUS; }
     | T_MINUS { $$ = T_MINUS; }
@@ -408,55 +492,8 @@ RelOp:
     ;
 
 UnaryOp:
-    NotOp { $$ = $1; }
-    | NegOp { $$ = $1; }
-    ;
-
-NotOp:
     T_NOT { $$ = T_NOT; }
-    ;
-
-NegOp:
-    T_MINUS { $$ = T_MINUS; }
-    ;
-
-Assignment:
-    Identifier T_ASSIGNMENT Expression T_SEMICOLON
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new("Assignment", -1, -1,
-                                yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $1);
-        ast_node_add_child(ast_node, $3);
-        //ast_node_print($3);
-        $$ = ast_node;
-    }
-    ;
-
-WhileStatement:
-    T_WHILE T_LPAR Expression T_RPAR T_DO CodeBlock
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new("WhileStatement", -1, -1,
-                                yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $3);
-        ast_node_add_child(ast_node, $6);
-        $$ = ast_node;
-    }
-    ;
-
-ForStatement:
-    T_FOR Identifier T_ASSIGNMENT Expression T_TO Expression T_DO CodeBlock
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new("ForStatement", -1, -1,
-                                yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $2);
-        ast_node_add_child(ast_node, $4);
-        ast_node_add_child(ast_node, $6);
-        ast_node_add_child(ast_node, $8);
-        $$ = ast_node;
-    }
+    | T_MINUS { $$ = T_MINUS; }
     ;
 
 SimpleType:
@@ -490,7 +527,7 @@ Literal:
     INT_LITERAL
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("Literal", INT_LITERAL, INTEGER,
+        ast_node = ast_node_new("IntLiteral", INT_LITERAL, INTEGER,
                                 yylloc.last_line, NULL);
         value_set_from_int(&ast_node->value, $1);
         $$ = ast_node;
@@ -498,17 +535,17 @@ Literal:
     | BOOL_LITERAL
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("Literal", BOOL_LITERAL, BOOLEAN,
+        ast_node = ast_node_new("BoolLiteral", BOOL_LITERAL, BOOLEAN,
                                 yylloc.last_line, NULL);
-        value_set_from_int(&ast_node->value, $1);
+        value_set_from_bool(&ast_node->value, $1);
         $$ = ast_node;
     }
     | CHAR_LITERAL
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("Literal", CHAR_LITERAL, CHAR,
+        ast_node = ast_node_new("CharLiteral", CHAR_LITERAL, CHAR,
                                 yylloc.last_line, NULL);
-        value_set_from_int(&ast_node->value, $1);
+        value_set_from_char(&ast_node->value, $1);
         $$ = ast_node;
     }
     ;

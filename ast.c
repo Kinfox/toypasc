@@ -132,11 +132,10 @@ _ast_node_print_graph(struct AstNode *node)
             temp = temp->sibling;
         }
     } else {
-        
         if (node->symbol != NULL) {
             printf("\tsymbol_%x [label=%s,style=filled,color=\"#CCFF99\"];\n", node->symbol, node->symbol->name);
             printf("\tnode_%x -> symbol_%x;\n", node, node->symbol);
-        } else if (!strcmp(node->name, "Literal")) {
+        } else if (strstr(node->name, "Literal")) {
             printf("\tliteral_%x [label=", node);
             value_print(&node->value, node->type);
             printf(",style=filled,color=\"#FFFFCC\"];\n");

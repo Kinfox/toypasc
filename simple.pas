@@ -1,6 +1,3 @@
-Var
-    l: Integer;
-Begin
-    x := y * 0;
-    i := 69;
+begin
+    x := myfunc(x, a < 3);
 End.

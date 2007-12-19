@@ -1,5 +1,5 @@
 LEX=flex
-LEXFLAGS=-i
+LEXFLAGS=
 YACC=bison
 CC=gcc
 CFLAGS=-ggdb

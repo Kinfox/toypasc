@@ -12,6 +12,7 @@
 %option bison-locations
 %option noyywrap
 %option nounput
+%option case-insensitive
 
 %%
 "var"                       { uploc; return T_VAR; }
@@ -31,6 +32,7 @@
 "println"                   { uploc; return T_PRINT_LINE; }
 
 "if"                        { uploc; return T_IF; }
+"then"                      { uploc; return T_THEN; }
 "else"                      { uploc; return T_ELSE; }
 "while"                     { uploc; return T_WHILE; }
 "for"                       { uploc; return T_FOR; }
@@ -63,6 +65,10 @@
 "true"|"false"              { uploc;
                               yylval->boolean=strcmp(yytext, "False");
                               return BOOL_LITERAL;
+                            }
+"'"."'"                     { uploc;
+                              yylval->character=yytext[1];
+                              return CHAR_LITERAL;
                             }
 [0-9]+                      { uploc;
                               yylval->integer=atoi(yytext);

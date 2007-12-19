@@ -123,7 +123,7 @@ _ast_node_print_graph(struct AstNode *node)
 
     if (node == NULL)
         return;
-    printf("\tnode_%x [label=%s];\n", node, node->name);
+    printf("\tnode_%x [label=%s,style=filled,color=\"#33FFCC\"];\n", node, node->name);
 
     if (node->children != NULL) {
         temp = node->children;
@@ -134,13 +134,28 @@ _ast_node_print_graph(struct AstNode *node)
     } else {
         
         if (node->symbol != NULL) {
-            printf("\tsymbol_%x [label=%s];\n", node->symbol, node->symbol->name);
+            printf("\tsymbol_%x [label=%s,style=filled,color=\"#CCFF99\"];\n", node->symbol, node->symbol->name);
             printf("\tnode_%x -> symbol_%x;\n", node, node->symbol);
         } else if (!strcmp(node->name, "Literal")) {
             printf("\tliteral_%x [label=", node);
             value_print(&node->value, node->type);
-            printf("];\n");
+            printf(",style=filled,color=\"#FFFFCC\"];\n");
             printf("\tnode_%x -> literal_%x;\n", node, node);
+        } else if (!strcmp(node->name, "SimpleType")) {
+            printf("\tSimpleType_%x [label=", node);
+            switch (node->type){
+                case INTEGER:
+                    printf("Integer");
+                    break;
+                case BOOLEAN:
+                    printf("Boolean");
+                    break;
+                case CHAR:
+                    printf("Char");
+                    break; 
+            }
+            printf(",style=filled,color=\"0.578 0.289 1.000\"];\n");
+            printf("\tnode_%x -> SimpleType_%x;\n", node, node);
         }
         
     }

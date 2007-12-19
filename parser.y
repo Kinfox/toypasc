@@ -84,6 +84,9 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 
 %type <astnode> VarDeclList
 %type <astnode> VarDecl
+%type <astnode> IdentifierList
+%type <astnode> MultiIdentifier
+%type <astnode> SingleIdentifier
 
 %type <astnode> ProcFuncList
 %type <astnode> ProcDecl
@@ -142,7 +145,7 @@ VarDeclList:
     ;
 
 VarDecl:
-    T_VAR Identifier T_COLON SimpleType T_SEMICOLON
+    T_VAR IdentifierList T_COLON SimpleType T_SEMICOLON
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("VarDecl", -1, -1,
@@ -152,6 +155,28 @@ VarDecl:
         $$ = ast_node;
     }
     ;
+
+IdentifierList:
+    SingleIdentifier MultiIdentifier
+    {
+        ((struct AstNode *) $1)->next = (struct AstNode *) $2;
+        $$ = $1;
+    }
+    ;
+
+MultiIdentifier:
+    /* empty */ { $$ = NULL; }
+    | T_COMMA SingleIdentifier MultiIdentifier
+    {
+        ((struct AstNode *) $2)->next = (struct AstNode *) $3;
+        $$ = $2;
+    }
+    ;
+
+SingleIdentifier:
+    Identifier { $$ = $1; }
+    ;
+
 
 ProcFuncList:
     /* empty */ { $$ = NULL;  }
@@ -197,7 +222,7 @@ FuncDecl:
         $$ = ast_node;
     }
     ;
-
+    
 ParamList:
     /* empty */ { $$ = NULL; }
     | SingleParam MultiParam

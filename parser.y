@@ -11,7 +11,6 @@ extern FILE *yyin;
 
 static void yyerror (/*YYLTYPE *locp, */const char *msg);
 /*int yylex (YYSTYPE *yylval_param, YYLTYPE *yylloc_param);*/
-
 %}
 
 %defines
@@ -91,7 +90,6 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %type <astnode> ProcFuncList
 %type <astnode> ProcDecl
 %type <astnode> FuncDecl
-
 %type <astnode> ParamList
 %type <astnode> SingleParam
 %type <astnode> MultiParam
@@ -222,13 +220,22 @@ FuncDecl:
         $$ = ast_node;
     }
     ;
-    
+
 ParamList:
     /* empty */ { $$ = NULL; }
     | SingleParam MultiParam
     {
         ((struct AstNode *) $1)->next = (struct AstNode *) $2;
         $$ = $1;
+    }
+    ;
+
+MultiParam:
+    /* empty */ { $$ = NULL; }
+    | T_COMMA SingleParam MultiParam
+    {
+        ((struct AstNode *) $2)->next = (struct AstNode *) $3;
+        $$ = $2;
     }
     ;
 
@@ -241,15 +248,6 @@ SingleParam:
         ast_node->children[0] = $1;
         ast_node->children[1] = $3;
         $$ = ast_node;
-    }
-    ;
-
-MultiParam:
-    /* empty */ { $$ = NULL; }
-    | T_COMMA SingleParam MultiParam
-    {
-        ((struct AstNode *) $2)->next = (struct AstNode *) $3;
-        $$ = $2;
     }
     ;
 

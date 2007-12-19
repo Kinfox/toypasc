@@ -24,10 +24,8 @@ ast_node_new(const char* name, int kind, int type,
     node->type = type;
     node->linenum = linenum;
     node->symbol = symbol;
-
-    for (i = 0; i < AST_CHILDREN_NUM; i++)
-        node->children[i] = NULL;
-    node->next = NULL;
+    node->children = NULL;
+    node->sibling = NULL;
 
     return node;
 }
@@ -35,29 +33,53 @@ ast_node_new(const char* name, int kind, int type,
 void
 ast_node_destroy(struct AstNode *node)
 {
-    int i;
+    if (node != NULL) {
+        ast_node_destroy(node->children);
+        ast_node_destroy(node->sibling);
+        free(node);
+    }
+}
 
-    if (node == NULL)
+void
+ast_node_add_child(struct AstNode *node, struct AstNode *child)
+{
+    struct AstNode *temp;
+
+    if (node == NULL || child == NULL)
         return;
 
-    for (i = 0; i < AST_CHILDREN_NUM; i++)
-        ast_node_destroy(node->children[i]);
-    ast_node_destroy(node->next);
+    if (node->children == NULL)
+        node->children = child;
+    else
+        ast_node_add_sibling(node->children, child);
+}
 
-    free(node);
+void
+ast_node_add_sibling(struct AstNode *node, struct AstNode *sibling)
+{
+    struct AstNode *temp;
+
+    if (node == NULL || sibling == NULL)
+        return;
+
+    if (node->sibling == NULL) {
+        node->sibling = sibling;
+    } else {
+        temp = node->sibling;
+        while (temp->sibling != NULL)
+            temp = temp->sibling;
+        temp->sibling = sibling;
+    }
 }
 
 void
 ast_node_print(struct AstNode *node)
 {
     int i;
-    bool go;
     struct AstNode *temp;
 
-    if (node == NULL) {
-        printf("(AstNode) NULL\n");
+    if (node == NULL)
         return;
-    }
 
     printf("(AstNode) %x : %s\n", node, node->name);
     printf("kind: %d\n", node->kind);
@@ -65,39 +87,28 @@ ast_node_print(struct AstNode *node)
     printf("value: ");
     value_print(&node->value, node->type);
     printf("\nlinenum: %d\n", node->linenum);
-    printf("symbol: %x\n", node->symbol);
+    if (node->symbol != NULL)
+        printf("symbol: %x (\"%s\")\n", node->symbol, node->symbol->name);
 
-    if (node->next != NULL)
-        printf("Sibling: %x\n", node->next);
-
-    go = FALSE;
-    for (i = 0; i < AST_CHILDREN_NUM; i++)
-        go = go || (node->children[i] != NULL);
-
-    if (go) {
+    if (node->children != NULL) {
         printf("Children\n");
-        for (i = 0; i < AST_CHILDREN_NUM; i++) {
-            temp = node->children[i];
+        temp = node->children;
+        while (temp != NULL) {
             printf("\t(AstNode) %x", temp);
-            if (temp != NULL) {
+            if (temp->name != NULL)
                 printf(" : %s", temp->name);
-            }
             printf("\n");
+            temp = temp->sibling;
         }
     }
-
     printf("\n");
 
-    for (i = 0; i < AST_CHILDREN_NUM; i++) {
-        if (node->children[i] != NULL)
-            ast_node_print(node->children[i]);
-    }
-    if (node->next != NULL)
-        ast_node_print(node->next);
+    ast_node_print(node->children);
+    ast_node_print(node->sibling);
 }
 
 /* Draft...
-void
+voi
 ast_node_print_graph(struct AstNode *node)
 {
     graph_code = 0;

@@ -82,12 +82,15 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %type <astnode> Program
 
 %type <astnode> VarDeclList
+%type <astnode> MultiVarDecl
 %type <astnode> VarDecl
 %type <astnode> IdentifierList
 %type <astnode> MultiIdentifier
 %type <astnode> SingleIdentifier
 
 %type <astnode> ProcFuncList
+%type <astnode> MultiProcFuncDecl
+%type <astnode> ProcFuncDecl
 %type <astnode> ProcDecl
 %type <astnode> FuncDecl
 %type <astnode> ParamList
@@ -96,17 +99,17 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 
 %type <astnode> MainCodeBlock
 %type <astnode> CodeBlock
+%type <astnode> StatementList
+%type <astnode> MultiStatement
+%type <astnode> Statement
+%type <astnode> WhileStatement
+%type <astnode> ForStatement
 
 %type <astnode> Expression
 %type <astnode> SimpleExpression
 %type <astnode> ComplexExpression
 %type <astnode> AddExpression
 %type <astnode> MultExpression
-
-%type <astnode> StatementList
-%type <astnode> Statement
-%type <astnode> WhileStatement
-%type <astnode> ForStatement
 
 %type <astnode> Assignment
 %type <astnode> Identifier
@@ -122,9 +125,9 @@ Program:
         struct AstNode *ast_node;
         ast_node = ast_node_new("Program", -1, -1,
                                 yylloc.last_line, NULL);
-        ast_node->children[0] = $1;
-        ast_node->children[1] = $2;
-        ast_node->children[2] = $3;
+        ast_node_add_child(ast_node, $1);
+        ast_node_add_child(ast_node, $2);
+        ast_node_add_child(ast_node, $3);
         $$ = ast_node;
 
         ast_node_print(ast_node);
@@ -134,11 +137,22 @@ Program:
     ;
 
 VarDeclList:
-    /* empty */ { $$ = NULL; }
-    | VarDeclList VarDecl
+    MultiVarDecl
     {
-        ((struct AstNode *) $2)->next = (struct AstNode *) $1;
-        $$ = $2;
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("VarDeclList", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $1);
+        $$ = ast_node;
+    }
+    ;
+
+MultiVarDecl:
+    /* empty */ { $$ = NULL; }
+    | VarDecl MultiVarDecl
+    {
+        ast_node_add_sibling($1, $2);
+        $$ = $1;
     }
     ;
 
@@ -148,8 +162,8 @@ VarDecl:
         struct AstNode *ast_node;
         ast_node = ast_node_new("VarDecl", -1, -1,
                                 yylloc.last_line, NULL);
-        ast_node->children[0] = $2;
-        ast_node->children[1] = $4;
+        ast_node_add_child(ast_node, $2);
+        ast_node_add_child(ast_node, $4);
         $$ = ast_node;
     }
     ;
@@ -157,8 +171,12 @@ VarDecl:
 IdentifierList:
     SingleIdentifier MultiIdentifier
     {
-        ((struct AstNode *) $1)->next = (struct AstNode *) $2;
-        $$ = $1;
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("IdentifierList", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_sibling($1, $2);
+        ast_node_add_child(ast_node, $1);
+        $$ = ast_node;
     }
     ;
 
@@ -166,7 +184,7 @@ MultiIdentifier:
     /* empty */ { $$ = NULL; }
     | T_COMMA SingleIdentifier MultiIdentifier
     {
-        ((struct AstNode *) $2)->next = (struct AstNode *) $3;
+        ast_node_add_sibling($2, $3);
         $$ = $2;
     }
     ;
@@ -177,17 +195,30 @@ SingleIdentifier:
 
 
 ProcFuncList:
-    /* empty */ { $$ = NULL;  }
-    | ProcFuncList ProcDecl
+    /* empty */ { $$ = NULL; }
+    | ProcFuncDecl MultiProcFuncDecl
     {
-        ((struct AstNode *) $2)->next = (struct AstNode *) $1;
-        $$ = $2;
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("ProcFuncList", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_sibling($1, $2);
+        ast_node_add_child(ast_node, $1);
+        $$ = ast_node;
     }
-    | ProcFuncList FuncDecl
+    ;
+
+MultiProcFuncDecl:
+    /* empty */ { $$ = NULL; }
+    | ProcFuncDecl MultiProcFuncDecl
     {
-        ((struct AstNode *) $2)->next = (struct AstNode *) $1;
-        $$ = $2;
+        ast_node_add_sibling($1, $2);
+        $$ = $1;
     }
+    ;
+
+ProcFuncDecl:
+    ProcDecl { $$ = $1; }
+    | FuncDecl { $$ = $1; }
     ;
 
 ProcDecl:
@@ -197,10 +228,10 @@ ProcDecl:
         struct AstNode *ast_node;
         ast_node = ast_node_new("ProcDecl", -1, PROCEDURE,
                                 yylloc.last_line, NULL);
-        ast_node->children[0] = $2; // Identifier
-        ast_node->children[1] = $4; // ParamList
-        ast_node->children[2] = $7; // VarDeclList
-        ast_node->children[3] = $8; // CodeBlock
+        ast_node_add_child(ast_node, $2);  // Identifier
+        ast_node_add_child(ast_node, $4);  // ParamList
+        ast_node_add_child(ast_node, $7);  // VarDeclList
+        ast_node_add_child(ast_node, $8);  // CodeBlock
         $$ = ast_node;
     }
     ;
@@ -212,11 +243,11 @@ FuncDecl:
         struct AstNode *ast_node;
         ast_node = ast_node_new("FuncDecl", -1, FUNCTION,
                                 yylloc.last_line, NULL);
-        ast_node->children[0] = $2; // Identifier
-        ast_node->children[1] = $4; // ParamList
-        ast_node->children[2] = $7; // SimpleType
-        ast_node->children[3] = $9; // VarDeclList
-        ast_node->children[4] = $10;// CodeBlock
+        ast_node_add_child(ast_node, $2);  // Identifier
+        ast_node_add_child(ast_node, $4);  // ParamList
+        ast_node_add_child(ast_node, $7);  // SimpleType
+        ast_node_add_child(ast_node, $9);  // VarDeclList
+        ast_node_add_child(ast_node, $10); // CodeBlock
         $$ = ast_node;
     }
     ;
@@ -225,8 +256,12 @@ ParamList:
     /* empty */ { $$ = NULL; }
     | SingleParam MultiParam
     {
-        ((struct AstNode *) $1)->next = (struct AstNode *) $2;
-        $$ = $1;
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("ParamList", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_sibling($1, $2);
+        ast_node_add_child(ast_node, $1);
+        $$ = ast_node;
     }
     ;
 
@@ -234,7 +269,7 @@ MultiParam:
     /* empty */ { $$ = NULL; }
     | T_COMMA SingleParam MultiParam
     {
-        ((struct AstNode *) $2)->next = (struct AstNode *) $3;
+        ast_node_add_sibling($2, $3);
         $$ = $2;
     }
     ;
@@ -245,8 +280,8 @@ SingleParam:
         struct AstNode *ast_node;
         ast_node = ast_node_new("SingleParam", -1, -1,
                                 yylloc.last_line, NULL);
-        ast_node->children[0] = $1;
-        ast_node->children[1] = $3;
+        ast_node_add_child(ast_node, $1);  // Identifier
+        ast_node_add_child(ast_node, $3);  // SimpleType
         $$ = ast_node;
     }
     ;
@@ -257,18 +292,27 @@ MainCodeBlock:
     ;
 
 CodeBlock:
-    T_BEGIN StatementList T_END
-    {
-        $$ = $2;
-    }
+    T_BEGIN StatementList T_END { $$ = $2; }
     ;
 
 StatementList:
-    /* empty */ { $$ = NULL; }
-    | StatementList Statement 
+    | Statement MultiStatement
     {
-        ((struct AstNode *) $2)->next = (struct AstNode *) $1;
-        $$ = $2;
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("StatementList", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_sibling($1, $2);
+        ast_node_add_child(ast_node, $1);
+        $$ = ast_node;
+    }
+    ;
+
+MultiStatement:
+    /* empty */ { $$ = NULL; }
+    | Statement MultiStatement
+    {
+        ast_node_add_sibling($1, $2);
+        $$ = $1;
     }
     ;
 
@@ -285,8 +329,8 @@ Expression:
         struct AstNode *ast_node;
         ast_node = ast_node_new("Expression", -1, -1,
                                 yylloc.last_line, NULL);
-        ast_node->children[0] = $1;
-        ast_node->children[1] = $2;
+        ast_node_add_child(ast_node, $1);
+        ast_node_add_child(ast_node, $2);
         $$ = ast_node;
     }
     ;
@@ -326,8 +370,8 @@ Assignment:
         struct AstNode *ast_node;
         ast_node = ast_node_new("Assignment", -1, -1,
                                 yylloc.last_line, NULL);
-        ast_node->children[0] = $1;
-        ast_node->children[1] = $3;
+        ast_node_add_child(ast_node, $1);
+        ast_node_add_child(ast_node, $3);
         //ast_node_print($3);
         $$ = ast_node;
     }
@@ -339,8 +383,8 @@ WhileStatement:
         struct AstNode *ast_node;
         ast_node = ast_node_new("WhileStatement", -1, -1,
                                 yylloc.last_line, NULL);
-        ast_node->children[0] = $3;
-        ast_node->children[1] = $6;
+        ast_node_add_child(ast_node, $3);
+        ast_node_add_child(ast_node, $6);
         $$ = ast_node;
     }
     ;
@@ -351,10 +395,10 @@ ForStatement:
         struct AstNode *ast_node;
         ast_node = ast_node_new("ForStatement", -1, -1,
                                 yylloc.last_line, NULL);
-        ast_node->children[0] = $2;
-        ast_node->children[1] = $4;
-        ast_node->children[2] = $6;
-        ast_node->children[3] = $8;
+        ast_node_add_child(ast_node, $2);
+        ast_node_add_child(ast_node, $4);
+        ast_node_add_child(ast_node, $6);
+        ast_node_add_child(ast_node, $8);
         $$ = ast_node;
     }
     ;

@@ -1,13 +1,13 @@
 Var x : Integer;
-Var y: Integer;
+Var a, b, c: Integer;
 
-Procedure myproc (a : Integer);
+Procedure myproc (procint: Integer, procbool : Boolean);
 Var i : Integer;
 Begin
-  i := a;
+  i := 3;
 End;
 
-Function myfunc (procchar : Integer, procbool : Boolean) : Integer;
+Function myfunc (funcint : Integer, funcbool : Boolean) : Integer;
 Var myvar : Boolean;
 Begin
   myfunc := 15;
@@ -15,5 +15,6 @@ End;
 
 Begin
   x := y;
+  x := 3;
 End.
 

@@ -130,9 +130,9 @@ Program:
         ast_node_add_child(ast_node, $3);
         $$ = ast_node;
 
-        ast_node_print(ast_node);
+        //ast_node_print(ast_node);
         //symbol_table_dump(sym_table);
-        //ast_node_print_graph(ast_node);
+        ast_node_print_graph(ast_node);
     }
     ;
 

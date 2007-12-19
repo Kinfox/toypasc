@@ -99,6 +99,10 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %type <astnode> IfStatement
 %type <astnode> WhileStatement
 %type <astnode> ForStatement
+%type <astnode> PrintCharStatement
+%type <astnode> PrintIntStatement
+%type <astnode> PrintBoolStatement
+%type <astnode> PrintLnStatement
 
 %type <astnode> Expression
 %type <astnode> SimpleExpression
@@ -327,6 +331,54 @@ Statement:
     | WhileStatement { $$ = $1; }
     | ForStatement { $$ = $1; }
     | Call { $$ = $1; }
+    | PrintIntStatement { $$ = $1; }
+    | PrintCharStatement { $$ = $1; }
+    | PrintBoolStatement { $$ = $1; }
+    | PrintLnStatement { $$ = $1; }
+    ;
+
+PrintIntStatement:
+    T_PRINT_INT T_LPAR Expression T_RPAR
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("PrintIntStatement", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $3);
+        $$ = ast_node;
+    }
+    ;
+    
+PrintCharStatement:
+    T_PRINT_CHAR T_LPAR Expression T_RPAR
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("PrintCharStatement", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $3);
+        $$ = ast_node;
+    }
+    ;
+
+PrintBoolStatement:
+    T_PRINT_BOOL T_LPAR Expression T_RPAR
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("PrintBoolStatement", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $3);
+        $$ = ast_node;
+    }
+    ;
+    
+PrintLnStatement:
+    T_PRINT_LINE T_LPAR Expression T_RPAR
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("PrintLnStatement", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $3);
+        $$ = ast_node;
+    }
     ;
 
 Assignment:

@@ -92,6 +92,10 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 
 %type <astnode> MainCodeBlock
 %type <astnode> CodeBlock
+%type <astnode> StatementList
+%type <astnode> Statement
+%type <astnode> WhileStatement
+%type <astnode> Expression
 
 %type <astnode> Assignment
 %type <astnode> Identifier
@@ -220,10 +224,24 @@ MainCodeBlock:
     ;
 
 CodeBlock:
-    T_BEGIN Assignment T_END
+    T_BEGIN StatementList T_END
     {
         $$ = $2;
     }
+    ;
+    
+StatementList:
+    /* empty */ { $$ = NULL; }
+    | StatementList Statement 
+    {
+        ((struct AstNode *) $2)->next = (struct AstNode *) $1;
+        $$ = $2;
+    }
+    ;
+    
+Statement:
+    Assignment { $$ = $1; }
+    | WhileStatement { $$ = $1; }
     ;
 
 Assignment:
@@ -239,6 +257,22 @@ Assignment:
     }
     ;
 
+WhileStatement:
+    T_WHILE T_LPAR Expression T_RPAR T_DO CodeBlock
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("WhileStatement", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node->children[0] = $3;
+        ast_node->children[1] = $6;
+        $$ = ast_node;
+    }
+    ;
+    
+Expression:
+    /* empty */ { $$ = NULL; }
+    ;
+    
 SimpleType:
     TYPE_IDENTIFIER
     {

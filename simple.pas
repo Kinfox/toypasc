@@ -4,4 +4,6 @@ Var z : Boolean;
 
 Begin
     x := 10;
+    y := 11;
+    z := 12;
 End.

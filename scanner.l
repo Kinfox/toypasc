@@ -14,16 +14,16 @@
 %option nounput
 
 %%
-"Var"                       { uploc; return T_VAR; }
-"Integer"|"Boolean"|"Char"  { uploc;
+"var"                       { uploc; return T_VAR; }
+"integer"|"boolean"|"char"  { uploc;
                               yylval->type = type_get_from_lexeme(yytext);
                               return TYPE_IDENTIFIER;
                             }
 
-"Procedure"                 { uploc; return T_PROCEDURE; }
-"Function"                  { uploc; return T_FUNCTION; }
-"Begin"                     { uploc; return T_BEGIN; }
-"End"                       { uploc; return T_END; }
+"procedure"                 { uploc; return T_PROCEDURE; }
+"function"                  { uploc; return T_FUNCTION; }
+"begin"                     { uploc; return T_BEGIN; }
+"end"                       { uploc; return T_END; }
 
 "printInt"                  { uploc; return T_PRINT_INT; }
 "printBoolean"              { uploc; return T_PRINT_BOOL; }
@@ -40,27 +40,27 @@
 ":="                        { uploc; return T_ASSIGNMENT; }
 "("                         { uploc; return T_LPAR; }
 ")"                         { uploc; return T_RPAR; }
-"+"                         { uploc; return T_ADD; }
-"-"                         { uploc; return T_SUB; }
-"*"                         { uploc; return T_MUL; }
-"/"                         { uploc; return T_DIV; }
+"+"                         { uploc; return T_PLUS; }
+"-"                         { uploc; return T_MINUS; }
+"*"                         { uploc; return T_STAR; }
+"/"                         { uploc; return T_SLASH; }
 "and"                       { uploc; return T_AND; }
 "or"                        { uploc; return T_OR; }
 "not"                       { uploc; return T_NOT; }
 
-">"                         { uploc; return T_MAJOR; }
-"<"                         { uploc; return T_MINOR; }
+">"                         { uploc; return T_GREATER; }
+"<"                         { uploc; return T_LESSER; }
 "="                         { uploc; return T_EQUAL; }
 "<>"                        { uploc; return T_NOTEQUAL; }
-">="                        { uploc; return T_MAJOREQUAL; }
-"<="                        { uploc; return T_MINOREQUAL; }
+">="                        { uploc; return T_GREATEREQUAL; }
+"<="                        { uploc; return T_LESSEREQUAL; }
 
 ";"                         { uploc; return T_SEMICOLON; }
 ":"                         { uploc; return T_COLON; }
 "."                         { uploc; return T_DOT; }
 ","                         { uploc; return T_COMMA; }
 
-"True"|"False"              { uploc;
+"true"|"false"              { uploc;
                               yylval->boolean=strcmp(yytext, "False");
                               return BOOL_LITERAL;
                             }

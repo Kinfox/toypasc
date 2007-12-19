@@ -1,4 +1,5 @@
 LEX=flex
+LEXFLAGS=-i
 YACC=bison
 CC=gcc
 CFLAGS=-ggdb
@@ -27,7 +28,7 @@ $(SCANNER).o: $(SCANNER).c $(PARSER).h
 	$(CC) $(CFLAGS) $(SCANNER).c -c
 
 $(SCANNER).c: $(SCANNER).l
-	$(LEX) -o$(SCANNER).c $(SCANNER).l
+	$(LEX) $(LEXFLAGS) -o$(SCANNER).c $(SCANNER).l
 
 $(PARSER).h: $(PARSER).y
 	$(YACC) -d $(PARSER).y -o $(PARSER).c

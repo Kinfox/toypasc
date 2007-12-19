@@ -10,7 +10,7 @@ End;
 Function myfunc (funcint : Integer, funcbool : Boolean) : Integer;
 Var myvar : Boolean;
 Begin
-  myfunc := 15;
+  myfunc := 15 + 16 * 9;
 End;
 
 Begin

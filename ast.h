@@ -5,7 +5,7 @@
 #include "parser.h"
 #include "symbol_table.h"
 
-#define AST_CHILDREN_NUM    4
+#define AST_CHILDREN_NUM    5
 
 struct AstNode {
     char *name;

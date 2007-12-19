@@ -30,6 +30,7 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
     struct AstNode *astnode;
 }
 
+/* Tokens */
 %token T_VAR
 
 %token T_PROCEDURE
@@ -78,7 +79,9 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %token <boolean> BOOL_LITERAL
 %token <character> CHAR_LITERAL
 
+/* Tipos das Regras */
 %type <astnode> Program
+
 %type <astnode> VarDeclList
 %type <astnode> VarDecl
 
@@ -92,10 +95,16 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 
 %type <astnode> MainCodeBlock
 %type <astnode> CodeBlock
+
+%type <astnode> Expression
+%type <astnode> SimpleExpression
+%type <astnode> ComplexExpression
+%type <astnode> AddExpression
+%type <astnode> MultExpression
+
 %type <astnode> StatementList
 %type <astnode> Statement
 %type <astnode> WhileStatement
-%type <astnode> Expression
 %type <astnode> ForStatement
 
 %type <astnode> Assignment
@@ -230,7 +239,7 @@ CodeBlock:
         $$ = $2;
     }
     ;
-    
+
 StatementList:
     /* empty */ { $$ = NULL; }
     | StatementList Statement 
@@ -239,15 +248,57 @@ StatementList:
         $$ = $2;
     }
     ;
-    
+
 Statement:
     Assignment { $$ = $1; }
     | WhileStatement { $$ = $1; }
     | ForStatement { $$ = $1; }
     ;
 
+Expression:
+    /* empty */ { $$ = NULL; }
+    | SimpleExpression ComplexExpression
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("Expression", -1, -1,
+                                yylloc.last_line, NULL);
+        ast_node->children[0] = $1;
+        ast_node->children[1] = $2;
+        $$ = ast_node;
+    }
+    ;
+
+SimpleExpression:
+    AddExpression { $$ = $1; }
+    | MultExpression { $$ = $1; }
+    | Literal { $$ = $1; }
+    | Identifier { $$ = $1; }
+    ;
+
+AddExpression:
+    T_ADD SimpleExpression { $$ = $2; }
+    ;
+
+MultExpression:
+    T_MULT SimpleExpression { $$ = $2; }
+    ;
+
+ComplexExpression:
+    /* empty */ { $$ = NULL; }
+    | RelOp SimpleExpression { $$ = NULL; }
+    ;
+
+RelOp:
+    T_MINOR
+    | T_MINOREQUAL
+    | T_MAJOR
+    | T_MAJOREQUAL
+    | T_EQUAL
+    | T_NOTEQUAL
+    ;
+
 Assignment:
-    Identifier T_ASSIGNMENT Literal T_SEMICOLON
+    Identifier T_ASSIGNMENT Expression T_SEMICOLON
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("Assignment", -1, -1,
@@ -270,7 +321,7 @@ WhileStatement:
         $$ = ast_node;
     }
     ;
-    
+
 ForStatement:
     T_FOR Identifier T_ASSIGNMENT Expression T_TO Expression T_DO CodeBlock
     {
@@ -284,12 +335,7 @@ ForStatement:
         $$ = ast_node;
     }
     ;
-    
-Expression:
-    /* empty */ { $$ = NULL; }
-    | Literal { $$ = $1; }
-    ;
-    
+
 SimpleType:
     TYPE_IDENTIFIER
     {

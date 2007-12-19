@@ -42,7 +42,7 @@
 ")"                         { uploc; return T_RPAR; }
 "+"                         { uploc; return T_ADD; }
 "-"                         { uploc; return T_SUB; }
-"*"                         { uploc; return T_MULT; }
+"*"                         { uploc; return T_MUL; }
 "/"                         { uploc; return T_DIV; }
 "and"                       { uploc; return T_AND; }
 "or"                        { uploc; return T_OR; }

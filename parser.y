@@ -53,7 +53,7 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %token T_ADD
 %token T_SUB
 %token T_DIV
-%token T_MULT
+%token T_MUL
 %token T_AND
 %token T_OR
 %token T_NOT
@@ -108,13 +108,21 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 %type <astnode> Expression
 %type <astnode> SimpleExpression
 %type <astnode> ComplexExpression
-%type <astnode> AddExpression
-%type <astnode> MultExpression
+%type <astnode> Term
+%type <astnode> ComplexTerm
+%type <astnode> Factor
+%type <astnode> NotFactor
+%type <astnode> ComplexFactor
 
 %type <astnode> Assignment
 %type <astnode> Identifier
 %type <astnode> SimpleType
 %type <astnode> Literal
+
+%type <integer> AddOp
+%type <integer> MulOp
+%type <integer> NotOp
+%type <integer> RelOp
 
 %start Program
 
@@ -132,7 +140,7 @@ Program:
 
         //ast_node_print(ast_node);
         //symbol_table_dump(sym_table);
-        ast_node_print_graph(ast_node);
+                ast_node_print_graph(ast_node);
     }
     ;
 
@@ -296,7 +304,7 @@ CodeBlock:
     ;
 
 StatementList:
-    | Statement MultiStatement
+    Statement MultiStatement
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("StatementList", -1, -1,
@@ -335,33 +343,96 @@ Expression:
     }
     ;
 
-SimpleExpression:
-    AddExpression { $$ = $1; }
-    | MultExpression { $$ = $1; }
-    | Literal { $$ = $1; }
-    | Identifier { $$ = $1; }
-    ;
-
-AddExpression:
-    T_ADD SimpleExpression { $$ = $2; }
-    ;
-
-MultExpression:
-    T_MULT SimpleExpression { $$ = $2; }
-    ;
-
 ComplexExpression:
     /* empty */ { $$ = NULL; }
     | RelOp SimpleExpression { $$ = NULL; }
     ;
 
+SimpleExpression:
+    Term ComplexTerm
+    {
+        //
+    }
+    ;
+
+Term:
+    NotFactor ComplexFactor
+    {
+        //
+    }
+    ;
+
+ComplexTerm:
+    AddOp Term
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("ComplexTerm", $1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $2);
+        $$ = ast_node;
+    }
+    ;
+
+NotFactor:
+    Factor { $$ = $1; }
+    | NotOp Factor
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("NotFactor", T_NOT, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $2);
+        $$ = ast_node;
+    }
+    ;
+
+Factor:
+    Identifier { $$ = $1; }
+    | Literal { $$ = $1; }
+    | T_LPAR Expression T_RPAR { $$ = $2; }
+    | Identifier T_LPAR T_RPAR
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("FuncCall", T_FUNCTION, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $1);
+        $$ = ast_node;
+    }
+    ;
+
+ComplexFactor:
+    MulOp NotFactor
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("ComplexFactor", $1, -1,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $2);
+        $$ = ast_node;
+    }
+    ;
+
+AddOp:
+    T_ADD { $$ = T_ADD; }
+    | T_SUB { $$ = T_SUB; }
+    | T_OR { $$ = T_OR; }
+    ;
+
+MulOp:
+    T_MUL { $$ = T_MUL; }
+    | T_DIV { $$ = T_DIV; }
+    | T_AND { $$ = T_AND; }
+    ;
+
+NotOp:
+    T_NOT { $$ = T_NOT; }
+    ;
+
 RelOp:
-    T_MINOR
-    | T_MINOREQUAL
-    | T_MAJOR
-    | T_MAJOREQUAL
-    | T_EQUAL
-    | T_NOTEQUAL
+    T_MINOR { $$ = T_MINOR; }
+    | T_MINOREQUAL { $$ = T_MINOREQUAL; }
+    | T_MAJOR { $$ = T_MAJOR; }
+    | T_MAJOREQUAL { $$ = T_MAJOREQUAL; }
+    | T_EQUAL { $$ = T_EQUAL; }
+    | T_NOTEQUAL { $$ = T_NOTEQUAL; }
     ;
 
 Assignment:

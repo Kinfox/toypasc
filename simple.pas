@@ -1,6 +1,6 @@
 Var
     l: Integer;
 Begin
-    x := y;
+    x := y * 0;
     i := 69;
 End.

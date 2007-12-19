@@ -118,12 +118,19 @@ ast_node_print_graph(struct AstNode *node)
 static void
 _ast_node_print_graph(struct AstNode *node)
 {
-   int i;
+    int i;
+    char *is_cluster;
     struct AstNode *temp;
 
     if (node == NULL)
         return;
-    printf("\tnode_%x [label=%s,style=filled,color=\"#33FFCC\"];\n", node, node->name);
+
+    is_cluster = strstr(node->name, "List");
+    if (is_cluster != NULL)
+        printf("subgraph {\nstyle=filled;\ncolor=lightgrey;\n");
+
+    printf("\tnode_%x [label=\"%s\",style=filled,color=\"#33FFCC\"];\n",
+           node, node->name);
 
     if (node->children != NULL) {
         temp = node->children;
@@ -133,15 +140,16 @@ _ast_node_print_graph(struct AstNode *node)
         }
     } else {
         if (node->symbol != NULL) {
-            printf("\tsymbol_%x [label=%s,style=filled,color=\"#CCFF99\"];\n", node->symbol, node->symbol->name);
+            printf("\tsymbol_%x [label=\"%s\",style=filled,color=\"#CCFF99\"];\n",
+                   node->symbol, node->symbol->name);
             printf("\tnode_%x -> symbol_%x;\n", node, node->symbol);
         } else if (strstr(node->name, "Literal")) {
-            printf("\tliteral_%x [label=", node);
+            printf("\tliteral_%x [label=\"", node);
             value_print(&node->value, node->type);
-            printf(",style=filled,color=\"#FFFFCC\"];\n");
+            printf("\",style=filled,color=\"#FFFFCC\"];\n");
             printf("\tnode_%x -> literal_%x;\n", node, node);
         } else if (!strcmp(node->name, "SimpleType")) {
-            printf("\tSimpleType_%x [label=", node);
+            printf("\tSimpleType_%x [label=\"", node);
             switch (node->type){
                 case INTEGER:
                     printf("Integer");
@@ -153,50 +161,14 @@ _ast_node_print_graph(struct AstNode *node)
                     printf("Char");
                     break; 
             }
-            printf(",style=filled,color=\"0.578 0.289 1.000\"];\n");
+            printf("\",style=filled,color=\"0.578 0.289 1.000\"];\n");
             printf("\tnode_%x -> SimpleType_%x;\n", node, node);
         }
-        
+
     }
     _ast_node_print_graph(node->children);
     _ast_node_print_graph(node->sibling);
+
+    if (is_cluster != NULL)
+        printf("}\n");
 }
-
-/* Draft...
-void
-ast_node_print_graph(struct AstNode *node)
-{
-    graph_code = 0;
-    printf("/* toypasc AST graph. *\n");
-    printf("digraph {\n");
-    _ast_node_print_graph(node);
-    printf("}\n");
-}
-
-static void
-_ast_node_print_graph(struct AstNode *node)
-{
-    int i;
-    int code;
-
-    if (node == NULL)
-        return;
-
-    code = graph_code++;
-
-    printf("\t%s_%d [label=%s]\n", node->name, code, node->name);
-    for (i = 0; i < AST_CHILDREN_NUM; i++) {
-        if (node->children[i] != NULL)
-            printf("\t%s_%d -> %s_%d\n", node->name, code,
-                                         node->children[i]->name,
-                                         graph_code + 1);
-        _ast_node_print_graph(node->children[i]);
-    }
-
-    if (node->next != NULL)
-        printf("\t%s_%d -> %s_%d\n", node->next->name, code,
-                                     node->children[i]->name,
-                                     graph_code + 1);
-    _ast_node_print_graph(node->next);
-}
-*/

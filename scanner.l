@@ -15,6 +15,7 @@
 %option case-insensitive
 
 %%
+"program"                   { uploc; return T_PROGRAM; }
 "var"                       { uploc; return T_VAR; }
 "integer"|"boolean"|"char"  { uploc;
                               yylval->type = type_get_from_lexeme(yytext);
@@ -42,40 +43,61 @@
 ":="                        { uploc; return T_ASSIGNMENT; }
 "("                         { uploc; return T_LPAR; }
 ")"                         { uploc; return T_RPAR; }
-"+"                         { uploc; return T_PLUS; }
-"-"                         { uploc; return T_MINUS; }
-"*"                         { uploc; return T_STAR; }
-"/"                         { uploc; return T_SLASH; }
-"and"                       { uploc; return T_AND; }
-"or"                        { uploc; return T_OR; }
-"not"                       { uploc; return T_NOT; }
-
-">"                         { uploc; return T_GREATER; }
-"<"                         { uploc; return T_LESSER; }
-"="                         { uploc; return T_EQUAL; }
-"<>"                        { uploc; return T_NOTEQUAL; }
-">="                        { uploc; return T_GREATEREQUAL; }
-"<="                        { uploc; return T_LESSEREQUAL; }
+"+"                         { uploc; yylval->lexeme=strdup(yytext);
+                              return T_PLUS;
+                            }
+"-"                         { uploc; yylval->lexeme=strdup(yytext);
+                              return T_MINUS;
+                            }
+"*"                         { uploc; yylval->lexeme=strdup(yytext);
+                              return T_STAR;
+                            }
+"/"                         { uploc; yylval->lexeme=strdup(yytext);
+                              return T_SLASH;
+                            }
+"and"                       { uploc; yylval->lexeme=strdup(yytext);
+                              return T_AND;
+                            }
+"or"                        { uploc; yylval->lexeme=strdup(yytext);
+                              return T_OR;
+                            }
+"not"                       { uploc; yylval->lexeme=strdup(yytext);
+                              return T_NOT;
+                            }
+">"                         { uploc; yylval->lexeme=strdup(yytext);
+                              return T_GREATER;
+                            }
+"<"                         { uploc; yylval->lexeme=strdup(yytext);
+                              return T_LESSER;
+                            }
+"="                         { uploc; yylval->lexeme=strdup(yytext);
+                              return T_EQUAL;
+                            }
+"<>"                        { uploc; yylval->lexeme=strdup(yytext);
+                              return T_NOTEQUAL;
+                            }
+">="                        { uploc; yylval->lexeme=strdup(yytext);
+                              return T_GREATEREQUAL;
+                            }
+"<="                        { uploc; yylval->lexeme=strdup(yytext);
+                              return T_LESSEREQUAL;
+                            }
 
 ";"                         { uploc; return T_SEMICOLON; }
 ":"                         { uploc; return T_COLON; }
 "."                         { uploc; return T_DOT; }
 ","                         { uploc; return T_COMMA; }
 
-"true"|"false"              { uploc;
-                              yylval->boolean=strcmp(yytext, "False");
+"true"|"false"              { uploc; yylval->boolean=strcmp(yytext, "False");
                               return BOOL_LITERAL;
                             }
-"'"."'"                     { uploc;
-                              yylval->character=yytext[1];
+"'"."'"                     { uploc; yylval->character=yytext[1];
                               return CHAR_LITERAL;
                             }
-[0-9]+                      { uploc;
-                              yylval->integer=atoi(yytext);
+[0-9]+                      { uploc; yylval->integer=atoi(yytext);
                               return INT_LITERAL;
                             }
-[A-Za-z][A-Za-z0-9]*        { uploc;
-                              yylval->lexeme=strdup(yytext);
+[A-Za-z][A-Za-z0-9]*        { uploc; yylval->lexeme=strdup(yytext);
                               return IDENTIFIER;
                             }
 

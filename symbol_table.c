@@ -21,17 +21,17 @@ symbol_new(char const * name)
 
 
 Symbol *
-symbol_insert(Symbol *table, char const *name)
+symbol_insert(Symbol **table, char const *name)
 {
-    Symbol *symbol = symbol_lookup(table, name);
+    Symbol *symbol = symbol_lookup(*table, name);
 
     if (symbol == NULL) {
         symbol = symbol_new(name);
-        symbol->next = table;
-        return symbol;
+        symbol->next = *table;
+        *table = symbol;
     }
 
-    return table;
+    return symbol;
 }
 
 Symbol *
@@ -43,7 +43,6 @@ symbol_lookup(Symbol *table, char const *name)
     while (temp != NULL) {
         if (!strcmp (temp->name, name))
             return temp;
-
         temp = temp->next;
     }
 

@@ -3,8 +3,7 @@
 #include <string.h>
 #include "ast.h"
 
-//static void _ast_node_print_graph(struct AstNode *node);
-//static int graph_code;
+static void _ast_node_print_graph(struct AstNode *node);
 
 struct AstNode *
 ast_node_new(const char* name, int kind, int type,
@@ -107,8 +106,50 @@ ast_node_print(struct AstNode *node)
     ast_node_print(node->sibling);
 }
 
+void
+ast_node_print_graph(struct AstNode *node)
+{
+    printf("/* toypasc AST graph. */\n");
+    printf("digraph {\n");
+    _ast_node_print_graph(node);
+    printf("}\n");
+}
+
+static void
+_ast_node_print_graph(struct AstNode *node)
+{
+   int i;
+    struct AstNode *temp;
+
+    if (node == NULL)
+        return;
+    printf("\tnode_%x [label=%s];\n", node, node->name);
+
+    if (node->children != NULL) {
+        temp = node->children;
+        while (temp != NULL) {
+            printf("\tnode_%x -> node_%x;\n", node, temp);
+            temp = temp->sibling;
+        }
+    } else {
+        
+        if (node->symbol != NULL) {
+            printf("\tsymbol_%x [label=%s];\n", node->symbol, node->symbol->name);
+            printf("\tnode_%x -> symbol_%x;\n", node, node->symbol);
+        } else if (!strcmp(node->name, "Literal")) {
+            printf("\tliteral_%x [label=", node);
+            value_print(&node->value, node->type);
+            printf("];\n");
+            printf("\tnode_%x -> literal_%x;\n", node, node);
+        }
+        
+    }
+    _ast_node_print_graph(node->children);
+    _ast_node_print_graph(node->sibling);
+}
+
 /* Draft...
-voi
+void
 ast_node_print_graph(struct AstNode *node)
 {
     graph_code = 0;

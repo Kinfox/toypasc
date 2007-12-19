@@ -22,6 +22,6 @@ void ast_node_destroy(struct AstNode *node);
 void ast_node_add_child(struct AstNode *node, struct AstNode *child);
 void ast_node_add_sibling(struct AstNode *node, struct AstNode *sibling);
 void ast_node_print(struct AstNode *node);
-//void ast_node_print_graph(struct AstNode *node);
+void ast_node_print_graph(struct AstNode *node);
 
 #endif // AST_H

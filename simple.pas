@@ -1,6 +1,6 @@
 Var x : Integer;
-Var y : Boolean;
-Var z : Char;
+Var y : Char;
+Var z : Boolean;
 
 Begin
     x := 10;

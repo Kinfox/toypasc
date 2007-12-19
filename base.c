@@ -24,9 +24,6 @@ value_print(Value *value, Type type)
         printf("%d", value->boolean);
     } else if (type == CHAR) {
         printf("%c", value->character);
-    } else {
-        fprintf(stderr, "base.c: value_print: unknow type\n");
-        exit(1);
     }
 }
 

@@ -5,6 +5,8 @@
 #include "parser.h"
 #include "symbol_table.h"
 
+#define AST_CHILDREN_NUM    4
+
 struct AstNode {
     char *name;
     int kind;
@@ -12,7 +14,7 @@ struct AstNode {
     Value value;
     Symbol *symbol;
     int linenum;
-    struct AstNode* children[3];
+    struct AstNode* children[AST_CHILDREN_NUM];
     struct AstNode* next;
 };
 

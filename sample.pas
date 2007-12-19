@@ -1,17 +1,18 @@
 Var x : Integer;
 Var y: Integer;
 
-Procedure teste (a : Integer);
+Procedure myproc (a : Integer);
 Var i : Integer;
 Begin
-    printInt(666);
-    println();
+  i := 11;
+End;
+
+Function myfunc (procchar : Char, procbool : Boolean) : Integer;
+Begin
+  myfunc := 15;
 End;
 
 Begin
-  x := 10;
-  x := 7 - 1;
-  printInt(11);
-  println();
-  printInt(22);
+  x := 8;
 End.
+

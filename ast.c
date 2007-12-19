@@ -25,7 +25,7 @@ ast_node_new(const char* name, int kind, int type,
     node->linenum = linenum;
     node->symbol = symbol;
 
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < AST_CHILDREN_NUM; i++)
         node->children[i] = NULL;
     node->next = NULL;
 
@@ -40,7 +40,7 @@ ast_node_destroy(struct AstNode *node)
     if (node == NULL)
         return;
 
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < AST_CHILDREN_NUM; i++)
         ast_node_destroy(node->children[i]);
     ast_node_destroy(node->next);
 
@@ -51,6 +51,7 @@ void
 ast_node_print(struct AstNode *node)
 {
     int i;
+    bool go;
     struct AstNode *temp;
 
     if (node == NULL) {
@@ -66,20 +67,28 @@ ast_node_print(struct AstNode *node)
     printf("\nlinenum: %d\n", node->linenum);
     printf("symbol: %x\n", node->symbol);
 
-    printf("Sibling: %x\n", node->next);
-    printf("Children\n");
-    for (i = 0; i < 3; i++) {
-        temp = node->children[i];
-        printf("\t(AstNode) %x", temp);
-        if (temp != NULL) {
-            printf(" : %s", temp->name);
+    if (node->next != NULL)
+        printf("Sibling: %x\n", node->next);
+
+    go = FALSE;
+    for (i = 0; i < AST_CHILDREN_NUM; i++)
+        go = go || (node->children[i] != NULL);
+
+    if (go) {
+        printf("Children\n");
+        for (i = 0; i < AST_CHILDREN_NUM; i++) {
+            temp = node->children[i];
+            printf("\t(AstNode) %x", temp);
+            if (temp != NULL) {
+                printf(" : %s", temp->name);
+            }
+            printf("\n");
         }
-        printf("\n");
     }
 
     printf("\n");
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < AST_CHILDREN_NUM; i++) {
         if (node->children[i] != NULL)
             ast_node_print(node->children[i]);
     }
@@ -110,7 +119,7 @@ _ast_node_print_graph(struct AstNode *node)
     code = graph_code++;
 
     printf("\t%s_%d [label=%s]\n", node->name, code, node->name);
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < AST_CHILDREN_NUM; i++) {
         if (node->children[i] != NULL)
             printf("\t%s_%d -> %s_%d\n", node->name, code,
                                          node->children[i]->name,

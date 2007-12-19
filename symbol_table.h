@@ -3,7 +3,8 @@
 
 #include "base.h"
 
-#define symbol_table_init() sym_table = NULL
+#define symbol_table_init()     sym_table = NULL
+#define symbol_add(table, name) table = symbol_insert(table, name)
 
 typedef struct _symbol {
     char *name;

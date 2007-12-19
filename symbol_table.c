@@ -23,21 +23,15 @@ symbol_new(char const * name)
 Symbol *
 symbol_insert(Symbol *table, char const *name)
 {
-    Symbol *symbol;
+    Symbol *symbol = symbol_lookup(table, name);
 
-    /*if (symbol == NULL) {
-        fprintf(stderr, "symbol_table.c: symbol_insert: symbol == NULL\n");
-        exit(1);
-    }*/
-
-    symbol = symbol_lookup(table, name);
-
-    if (symbol == NULL)
+    if (symbol == NULL) {
         symbol = symbol_new(name);
+        symbol->next = table;
+        return symbol;
+    }
 
-    symbol->next = table;
-
-    return symbol;
+    return table;
 }
 
 Symbol *
@@ -77,20 +71,22 @@ void
 symbol_print(Symbol *symbol)
 {
     if (symbol == NULL) {
-        printf("NULL\n");
+        printf("NULL\n\n");
         return;
     }
 
     printf("Symbol: %x\n", symbol);
-    printf("%s\n", symbol->name);
-    printf("%d\n", symbol->type);
+    printf("name: %s\n", symbol->name);
+    printf("type: %d\n", symbol->type);
+    printf("value:");
+    value_print(&symbol->value, symbol->type);
+    printf("\nnext: %x\n\n", symbol->next);
 }
 
 void
 symbol_table_dump(Symbol *table)
 {
-    Symbol *temp;
-    temp = table;
+    Symbol *temp = table;
 
     while(temp != NULL) {
         symbol_print(temp);

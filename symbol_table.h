@@ -9,18 +9,17 @@ typedef struct _symbol {
     char *name;
     Type type;
     Value value;
-    //Scope
     struct _symbol *next;
 } Symbol;
 
 static Symbol *sym_table;
 
 Symbol *symbol_new(char const * name);
-Symbol *symbol_insert(Symbol **table, char const *name);
-Symbol *symbol_lookup(Symbol *table, char const *name);
+Symbol *symbol_lookup(Symbol *symtab, char const *name);
+Symbol *symbol_insert(Symbol *symtab, Symbol *symbol);
 //symbol_get_scope, parent_scope, etc....
 
-void symbol_table_destroy(Symbol **table);
+void symbol_table_destroy(Symbol *table);
 void symbol_table_dump(Symbol *table);
 void symbol_print(Symbol *symbol);
 

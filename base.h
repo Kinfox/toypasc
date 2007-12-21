@@ -12,10 +12,15 @@ typedef enum TypeEnum {
     NONE_TYPE = -1,
     INTEGER,
     BOOLEAN,
-    CHAR,
+    CHAR
+} Type;
+
+typedef enum KindEnum {
+    NONE_KIND = -1,
+    PROGRAM,
     PROCEDURE,
     FUNCTION
-} Type;
+} Kind;
 
 typedef union {
         int integer;
@@ -24,6 +29,7 @@ typedef union {
 } Value;
 
 Type type_get_from_lexeme(const char *lexeme);
+char *type_get_lexeme(Type type);
 
 void value_print(Value *value, Type type);
 void value_get(Value *value, Type type, void *val);

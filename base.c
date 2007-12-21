@@ -15,6 +15,21 @@ type_get_from_lexeme(const char *lexeme)
         return NONE_TYPE;
 }
 
+char *
+type_get_lexeme(Type type)
+{
+    switch (type) {
+        case INTEGER:
+            return "Integer";
+        case BOOLEAN:
+            return "Boolean";
+        case CHAR:
+            return "Char";
+        default:
+            return "NoneType";
+    }
+}
+
 void
 value_print(Value *value, Type type)
 {

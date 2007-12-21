@@ -1,15 +1,20 @@
 program sample;
 
-Var d : Integer;
-Var a, b, c: Integer;
+Var x : Integer;
+Var a, b, c: Boolean;
 
-Procedure myproc (procint: Integer, procbool : Boolean);
+Procedure myproc (pint: Integer, pbool : Boolean);
 Var i : Integer;
 Begin
   a := 3;
 End;
 
-FunCtion myfunc (funcint : Integer, funcbool : Boolean) : Integer;
+FunCtion otherfnc () : Char;
+Begin
+    otherfunc := 'Z';
+End;
+
+FunCtion myfunc (fint : Integer, fchar: Char) : Integer;
 var myvar : Boolean;
 Begin
     myvar := 34;
@@ -17,6 +22,6 @@ End;
 
 Begin
     d := 2;
-    x := func(x, 9);
+    x := myfunc(x, 'W');
 End.
 

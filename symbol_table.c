@@ -19,51 +19,67 @@ symbol_new(char const * name)
     return symbol;
 }
 
-
+/* Insere um simbolo na tabela indicada.
+ * Caso o simbolo ja exista, a memoria do
+ * simbolo do parametro sera liberada.
+ * Returns: O simbolo passado como parametro,
+ * caso este ainda nao esteja na tabela,
+ * ou um ponteiro para o simbolo encontrado.
+ */
 Symbol *
-symbol_insert(Symbol **table, char const *name)
+symbol_insert(Symbol *symtab, Symbol *symbol)
 {
-    Symbol *symbol = symbol_lookup(*table, name);
+    Symbol *sym;
 
-    if (symbol == NULL) {
-        symbol = symbol_new(name);
-        symbol->next = *table;
-        *table = symbol;
+    if (symbol == NULL)
+        return NULL;
+
+    sym = symbol_lookup(symtab->next, symbol->name);
+
+    if (sym != NULL) {
+        free(symbol->name);
+        free(symbol);
+        return sym;
     }
 
+    //printf("symbol %x (next %x)\nsym    %x\n", symbol, symbol->next, sym);
+
+    symbol->next = symtab->next;
+    symtab->next = symbol;
+
+    symbol_table_dump(symtab);
+    //printf("symbol %x (next %x)\nsym    %x\n", symbol, symbol->next, sym);
     return symbol;
 }
 
 Symbol *
-symbol_lookup(Symbol *table, char const *name)
+symbol_lookup(Symbol *symtab, char const *name)
 {
     Symbol *temp;
-    temp = table;
 
-    while (temp != NULL) {
+    for (temp = symtab; temp != NULL; temp = temp->next) {
         if (!strcmp (temp->name, name))
             return temp;
-        temp = temp->next;
     }
 
     return temp;
 }
 
 void
-symbol_table_destroy(Symbol **table)
+symbol_table_destroy(Symbol *symtab)
 {
     Symbol *first;
     Symbol *to_kill;
-    first = *table;
-    *table = NULL;
+    first = symtab->next;
+    symtab->next = NULL;
 
     while (first != NULL) {
         to_kill = first;
         first = first->next;
+        if (to_kill->name != NULL)
+            free(to_kill->name);
         free(to_kill);
     }
-
-    free(first);
 }
 
 void
@@ -83,14 +99,10 @@ symbol_print(Symbol *symbol)
 }
 
 void
-symbol_table_dump(Symbol *table)
+symbol_table_dump(Symbol *symtab)
 {
-    Symbol *temp = table;
+    Symbol *temp = symtab;
 
-    while(temp != NULL) {
+    for (temp = symtab->next; temp != NULL; temp = temp->next)
         symbol_print(temp);
-        temp = temp->next;
-    }
-
-    free(temp);
 }

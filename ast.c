@@ -4,6 +4,7 @@
 #include "ast.h"
 
 static void _ast_node_print_graph(struct AstNode *node);
+static void _ast_node_print_graph_symbol_table(Symbol *symbol);
 
 struct AstNode *
 ast_node_new(const char* name, int kind, int type,
@@ -72,6 +73,61 @@ ast_node_add_sibling(struct AstNode *node, struct AstNode *sibling)
 }
 
 void
+ast_node_fill_symbol_table(struct AstNode *node, Symbol *symtab)
+{
+    Symbol *symbol = NULL;
+    struct AstNode *temp;
+
+    if (node == NULL)
+        return;
+
+    if (node->symbol != NULL) {
+        printf("symtab  %x\nnode->s %x\n", symtab, node->symbol);
+        node->symbol = symbol_insert(symtab, node->symbol);
+        printf("symtab  %x\nnode->s %x\n", symtab, node->symbol);
+    }
+
+    //for (temp = node->children; temp != NULL; temp = temp->sibling) {
+        //printf ("kind: %d\n", node->kind);
+        //if (node->kind == FUNCTION || node->kind == PROCEDURE) {
+           // O primeiro filho de uma funcao ou procedimento
+           // eh sempre um identificador.
+    //       ast_node_fill_symbol_table(temp, symtab);
+        //} else {
+        //   symbol = ast_node_get_symbols(temp);
+        //}
+    //}
+}
+
+void
+ast_node_set_type(struct AstNode *node, Type type)
+{
+    struct AstNode *temp;
+
+    if (node == NULL)
+        return;
+
+    node->type = type;
+    if (node->symbol != NULL)
+        node->symbol->type = type;
+
+    if (!strcmp(node->name, "IdentifierList")) {
+        for (temp = node->children; temp != NULL; temp = temp->sibling)
+            ast_node_set_type(temp, type);
+    } else
+        ast_node_set_type(node->children, type);
+}
+
+Type
+ast_node_get_type(struct AstNode *node)
+{
+    if (node->type == NONE_TYPE)
+        return ast_node_get_type(node->children);
+    else
+        return node->type;
+}
+
+void
 ast_node_print(struct AstNode *node)
 {
     int i;
@@ -107,11 +163,22 @@ ast_node_print(struct AstNode *node)
 }
 
 void
-ast_node_print_graph(struct AstNode *node)
+ast_node_print_graph(struct AstNode *node, Symbol *symtab)
 {
     printf("/* toypasc AST graph. */\n");
     printf("digraph {\n");
+    printf("ranksep=1.0;\n");
+    printf("\tnode [fontsize=11,fontname=Courier];\n");
+    printf("\tedge [color=\"#22DDAA\"];\n");
+
+    printf("\tsubgraph cluster_symtab {\tstyle=filled;\n");
+    printf("\tcolor=\"#EFEFEF\";\n\tfontname=Courier;\n");
+    printf("\tnode [style=filled,color=white,fillcolor=\"#CCFF99\"];\n");
+    _ast_node_print_graph_symbol_table(node->symbol);
+    printf("\t}\n");
+
     _ast_node_print_graph(node);
+
     printf("}\n");
 }
 
@@ -119,18 +186,33 @@ static void
 _ast_node_print_graph(struct AstNode *node)
 {
     int i;
-    char *is_cluster;
+    bool is_program;
+    bool is_cluster;
+    bool is_funcproc;
     struct AstNode *temp;
 
     if (node == NULL)
         return;
 
-    is_cluster = strstr(node->name, "List");
-    if (is_cluster != NULL)
-        printf("subgraph {\nstyle=filled;\ncolor=lightgrey;\n");
+    is_program = !strcmp(node->name, "Program");
+    is_funcproc = !strcmp(node->name, "ProcDecl") ||
+                 !strcmp(node->name, "FuncDecl");
+    is_cluster = is_program || is_funcproc ||
+                 !strcmp(node->name, "ProgramDecl") ||
+                 strstr(node->name, "List");
 
-    printf("\tnode_%x [label=\"%s\",style=filled,color=\"#33FFCC\"];\n",
-           node, node->name);
+    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
+
+    if (is_cluster) {
+        if (is_program)
+            printf("filled,color=\"#FF0000\",fillcolor=\"#FFEEEE\"];\n");
+        else if (is_funcproc)
+            printf("filled,color=\"#0000FF\",fillcolor=\"#EEEEFF\"];\n");
+        else
+            printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
+        printf("subgraph cluster_%x {\n\tstyle=dotted;\n", node, node->name);
+    } else
+        printf("filled,color=\"#EEFFEE\"];\n");
 
     if (node->children != NULL) {
         temp = node->children;
@@ -140,35 +222,38 @@ _ast_node_print_graph(struct AstNode *node)
         }
     } else {
         if (node->symbol != NULL) {
-            printf("\tsymbol_%x [label=\"%s\",style=filled,color=\"#CCFF99\"];\n",
-                   node->symbol, node->symbol->name);
-            printf("\tnode_%x -> symbol_%x;\n", node, node->symbol);
+            printf("\tnode_%x -> symbol_%x [color=lightgray,headport=n];\n", node, node->symbol);
         } else if (strstr(node->name, "Literal")) {
             printf("\tliteral_%x [label=\"", node);
             value_print(&node->value, node->type);
             printf("\",style=filled,color=\"#FFFFCC\"];\n");
             printf("\tnode_%x -> literal_%x;\n", node, node);
-        } else if (!strcmp(node->name, "SimpleType")) {
-            printf("\tSimpleType_%x [label=\"", node);
-            switch (node->type){
-                case INTEGER:
-                    printf("Integer");
-                    break;
-                case BOOLEAN:
-                    printf("Boolean");
-                    break;
-                case CHAR:
-                    printf("Char");
-                    break; 
-            }
-            printf("\",style=filled,color=\"0.578 0.289 1.000\"];\n");
-            printf("\tnode_%x -> SimpleType_%x;\n", node, node);
         }
 
     }
-    _ast_node_print_graph(node->children);
-    _ast_node_print_graph(node->sibling);
 
-    if (is_cluster != NULL)
+    _ast_node_print_graph(node->children);
+
+    if (is_cluster)
         printf("}\n");
+
+    _ast_node_print_graph(node->sibling);
 }
+
+static void
+_ast_node_print_graph_symbol_table(Symbol *symbol)
+{
+    if (symbol == NULL)
+        return;
+
+    printf("\t\tsymbol_%x [shape=record,label=\"{Symbol|Address: 0x%x\\l|lexeme: %s\\l|",
+           symbol, symbol, symbol->name);
+    printf("type: %s\\l}\",style=filled,color=white,fillcolor=\"#CCFF99\"];\n",
+           type_get_lexeme(symbol->type));
+
+    //if (symbol->next != NULL)
+    //    printf("\t\tsymbol_%x -> symbol_%x;\n", symbol, symbol->next);
+
+    _ast_node_print_graph_symbol_table(symbol->next);
+}
+

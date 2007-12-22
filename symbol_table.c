@@ -42,13 +42,9 @@ symbol_insert(Symbol *symtab, Symbol *symbol)
         return sym;
     }
 
-    //printf("symbol %x (next %x)\nsym    %x\n", symbol, symbol->next, sym);
-
     symbol->next = symtab->next;
     symtab->next = symbol;
 
-    symbol_table_dump(symtab);
-    //printf("symbol %x (next %x)\nsym    %x\n", symbol, symbol->next, sym);
     return symbol;
 }
 

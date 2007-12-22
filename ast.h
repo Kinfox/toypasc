@@ -29,6 +29,6 @@ void ast_node_set_type(struct AstNode *node, Type type);
 void ast_node_fill_symbol_table(struct AstNode *node, Symbol *symtab);
 
 void ast_node_print(struct AstNode *node);
-void ast_node_print_graph(struct AstNode *node, Symbol *sym_table);
+void ast_node_print_graph(struct AstNode *node);
 
 #endif // AST_H

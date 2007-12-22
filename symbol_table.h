@@ -12,7 +12,7 @@ typedef struct _symbol {
     struct _symbol *next;
 } Symbol;
 
-static Symbol *sym_table;
+static Symbol *global_symbol_table;
 
 Symbol *symbol_new(char const * name);
 Symbol *symbol_lookup(Symbol *symtab, char const *name);

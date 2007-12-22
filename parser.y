@@ -132,8 +132,8 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 Program:
     ProgramDecl VarDeclList ProcFuncList MainCodeBlock
     {
-        Symbol *symtab;
         struct AstNode *ast_node;
+        struct AstNode *temp;
         ast_node = ast_node_new("Program", PROGRAM, NONE_TYPE,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
@@ -142,12 +142,13 @@ Program:
         ast_node_add_child(ast_node, $4);
         $$ = ast_node;
 
-        symtab = symbol_new(NULL);
-        ast_node->symbol = symtab;
-        ast_node_fill_symbol_table(ast_node, symtab);
+        global_symbol_table = symbol_new(NULL);
+        ast_node->symbol = global_symbol_table;
+        for (temp = ast_node->children; temp != NULL; temp = temp->sibling)
+            ast_node_fill_symbol_table(temp, global_symbol_table);
 
         //ast_node_print(ast_node);
-        //ast_node_print_graph(ast_node, ast_node->symbol);
+        ast_node_print_graph(ast_node);
         //symbol_table_dump(ast_node->symbol);
     }
     ;
@@ -156,7 +157,7 @@ ProgramDecl:
     T_PROGRAM Identifier T_SEMICOLON
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("ProgramDecl", NONE_KIND, NONE_TYPE,
+        ast_node = ast_node_new("ProgramDecl", PROG_DECL, NONE_TYPE,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);
         $$ = ast_node;
@@ -200,7 +201,7 @@ IdentifierList:
     SingleIdentifier MultiIdentifier
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("IdentifierList", NONE_KIND, NONE_TYPE,
+        ast_node = ast_node_new("IdentifierList", IDENT_LIST, NONE_TYPE,
                                 yylloc.last_line, NULL);
         ast_node_add_sibling($1, $2);
         ast_node_add_child(ast_node, $1);
@@ -253,13 +254,22 @@ ProcDecl:
     T_PROCEDURE Identifier T_LPAR ParamList T_RPAR T_SEMICOLON VarDeclList
     CodeBlock T_SEMICOLON
     {
+        Symbol *symtab;
         struct AstNode *ast_node;
+        struct AstNode *temp;
+
         ast_node = ast_node_new("ProcDecl", PROCEDURE, NONE_TYPE,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);  // Identifier
         ast_node_add_child(ast_node, $4);  // ParamList
         ast_node_add_child(ast_node, $7);  // VarDeclList
         ast_node_add_child(ast_node, $8);  // CodeBlock
+
+        symtab = symbol_new(NULL);
+        ast_node->symbol = symtab;
+        for (temp = ast_node->children; temp != NULL; temp = temp->sibling)
+            ast_node_fill_symbol_table(temp, symtab);
+
         $$ = ast_node;
     }
     ;
@@ -268,7 +278,10 @@ FuncDecl:
     T_FUNCTION Identifier T_LPAR ParamList T_RPAR T_COLON TYPE_IDENTIFIER
     T_SEMICOLON VarDeclList CodeBlock T_SEMICOLON
     {
+        Symbol *symtab;
         struct AstNode *ast_node;
+        struct AstNode *temp;
+
         ast_node = ast_node_new("FuncDecl", FUNCTION, $7,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);  // Identifier
@@ -277,6 +290,11 @@ FuncDecl:
         ast_node_add_child(ast_node, $10); // CodeBlock
 
         ast_node_set_type($2, $7);
+
+        symtab = symbol_new(NULL);
+        ast_node->symbol = symtab;
+        for (temp = ast_node->children; temp != NULL; temp = temp->sibling)
+            ast_node_fill_symbol_table(temp, symtab);
 
         $$ = ast_node;
     }

@@ -18,8 +18,10 @@ typedef enum TypeEnum {
 typedef enum KindEnum {
     NONE_KIND = -1,
     PROGRAM,
+    PROG_DECL,
     PROCEDURE,
-    FUNCTION
+    FUNCTION,
+    IDENT_LIST
 } Kind;
 
 typedef union {

@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast.h"
+#include "typecheck_visitor.h"
 
-static void _ast_node_print_graph(struct AstNode *node);
+static void _ast_node_print_graph(struct AstNode *self);
 static void _ast_node_print_graph_symbol_table(Symbol *symbol);
 
 struct AstNode *
@@ -31,41 +32,39 @@ ast_node_new(const char* name, int kind, int type,
 }
 
 void
-ast_node_destroy(struct AstNode *node)
+ast_node_destroy(struct AstNode *self)
 {
-    if (node != NULL) {
-        ast_node_destroy(node->children);
-        ast_node_destroy(node->sibling);
-        free(node);
+    if (self != NULL) {
+        ast_node_destroy(self->children);
+        ast_node_destroy(self->sibling);
+        free(self);
     }
 }
 
 void
-ast_node_add_child(struct AstNode *node, struct AstNode *child)
+ast_node_add_child(struct AstNode *self, struct AstNode *child)
 {
-    struct AstNode *temp;
-
-    if (node == NULL || child == NULL)
+    if (self == NULL || child == NULL)
         return;
 
-    if (node->children == NULL)
-        node->children = child;
+    if (self->children == NULL)
+        self->children = child;
     else
-        ast_node_add_sibling(node->children, child);
+        ast_node_add_sibling(self->children, child);
 }
 
 void
-ast_node_add_sibling(struct AstNode *node, struct AstNode *sibling)
+ast_node_add_sibling(struct AstNode *self, struct AstNode *sibling)
 {
     struct AstNode *temp;
 
-    if (node == NULL || sibling == NULL)
+    if (self == NULL || sibling == NULL)
         return;
 
-    if (node->sibling == NULL) {
-        node->sibling = sibling;
+    if (self->sibling == NULL) {
+        self->sibling = sibling;
     } else {
-        temp = node->sibling;
+        temp = self->sibling;
         while (temp->sibling != NULL)
             temp = temp->sibling;
         temp->sibling = sibling;
@@ -73,81 +72,171 @@ ast_node_add_sibling(struct AstNode *node, struct AstNode *sibling)
 }
 
 void
-ast_node_fill_symbol_table(struct AstNode *node, Symbol *symtab)
+ast_node_accept(struct AstNode *self, Visitor *visitor)
+{
+    switch (self->kind) {
+        case PROGRAM:
+            visitor->visit_program(self);
+            break;
+        case PROGDECL:
+            visitor->visit_programdecl(self);
+            break;
+        case VARDECL_LIST:
+            visitor->visit_vardecl_list(self);
+            break;
+        case VARDECL:
+            visitor->visit_vardecl(self);
+            break;
+        case IDENT_LIST:
+            visitor->visit_identifier_list(self);
+            break;
+        case PROCFUNC_LIST:
+            visitor->visit_procfunc_list(self);
+            break;
+        case PROCEDURE:
+            visitor->visit_procedure(self);
+            break;
+        case FUNCTION:
+            visitor->visit_function(self);
+            break;
+        case PARAM_LIST:
+            visitor->visit_param_list(self);
+            break;
+        case PARAMETER:
+            visitor->visit_parameter(self);
+            break;
+        case STATEMENT_LIST:
+            visitor->visit_statement_list(self);
+            break;
+        case PRINTINT_STMT:
+            visitor->visit_printint_stmt(self);
+            break;
+        case PRINTCHAR_STMT:
+            visitor->visit_printchar_stmt(self);
+            break;
+        case PRINTBOOL_STMT:
+            visitor->visit_printbool_stmt(self);
+            break;
+        case PRINTLINE_STMT:
+            visitor->visit_printline_stmt(self);
+            break;
+        case ASSIGNMENT_STMT:
+            visitor->visit_assignment_stmt(self);
+            break;
+        case IF_STMT:
+            visitor->visit_if_stmt(self);
+            break;
+        case WHILE_STMT:
+            visitor->visit_while_stmt(self);
+            break;
+        case FOR_STMT:
+            visitor->visit_for_stmt(self);
+            break;
+        case REL_EXPR:
+            visitor->visit_rel_expr(self);
+            break;
+        case ADD_EXPR:
+            visitor->visit_add_expr(self);
+            break;
+        case MUL_EXPR:
+            visitor->visit_mul_expr(self);
+            break;
+        case NOTFACTOR:
+            visitor->visit_notfactor(self);
+            break;
+        case CALL:
+            visitor->visit_call(self);
+            break;
+        case CALLPARAM_LIST:
+            visitor->visit_callparam_list(self);
+            break;
+        case IDENTIFIER:
+            visitor->visit_identifier(self);
+            break;
+        case INT_LITERAL:
+        case BOOL_LITERAL:
+        case CHAR_LITERAL:
+            visitor->visit_literal(self);
+            break;
+    }
+}
+
+void
+ast_node_fill_symbol_table(struct AstNode *self, Symbol *symtab)
 {
     Symbol *symbol = NULL;
     struct AstNode *temp;
 
-    if (node == NULL)
+    if (self == NULL)
         return;
 
-    if (node->kind == IDENTIFIER) {
+    if (self->kind == IDENTIFIER) {
         if (symtab != global_symbol_table) {
-            symbol = symbol_lookup(global_symbol_table, node->symbol->name);
+            symbol = symbol_lookup(global_symbol_table, self->symbol->name);
             if (symbol == NULL)
-                node->symbol = symbol_insert(symtab, node->symbol);
+                self->symbol = symbol_insert(symtab, self->symbol);
             else
-                node->symbol = symbol;
+                self->symbol = symbol;
         } else
-            node->symbol = symbol_insert(symtab, node->symbol);
-    } else if (node->kind == FUNCTION || node->kind == PROCEDURE)
+            self->symbol = symbol_insert(symtab, self->symbol);
+    } else if (self->kind == FUNCTION || self->kind == PROCEDURE)
         // Primeiro filho de uma funcao ou procedimento eh um Identifier.
-        node->children->symbol =
-                symbol_insert(symtab, node->children->symbol);
+        self->children->symbol =
+                symbol_insert(symtab, self->children->symbol);
     else
-        for (temp = node->children; temp != NULL; temp = temp->sibling)
+        for (temp = self->children; temp != NULL; temp = temp->sibling)
             ast_node_fill_symbol_table(temp, symtab);
 }
 
 void
-ast_node_set_type(struct AstNode *node, Type type)
+ast_node_set_type(struct AstNode *self, Type type)
 {
     struct AstNode *temp;
 
-    if (node == NULL)
+    if (self == NULL)
         return;
 
-    node->type = type;
-    if (node->symbol != NULL)
-        node->symbol->type = type;
+    self->type = type;
+    if (self->symbol != NULL)
+        self->symbol->type = type;
 
-    if (node->kind == IDENT_LIST) {
-        for (temp = node->children; temp != NULL; temp = temp->sibling)
+    if (self->kind == IDENT_LIST) {
+        for (temp = self->children; temp != NULL; temp = temp->sibling)
             ast_node_set_type(temp, type);
     } else
-        ast_node_set_type(node->children, type);
+        ast_node_set_type(self->children, type);
 }
 
 Type
-ast_node_get_type(struct AstNode *node)
+ast_node_get_type(struct AstNode *self)
 {
-    if (node->type == NONE_TYPE)
-        return ast_node_get_type(node->children);
+    if (self->type == NONE_TYPE)
+        return ast_node_get_type(self->children);
     else
-        return node->type;
+        return self->type;
 }
 
 void
-ast_node_print(struct AstNode *node)
+ast_node_print(struct AstNode *self)
 {
     int i;
     struct AstNode *temp;
 
-    if (node == NULL)
+    if (self == NULL)
         return;
 
-    printf("(AstNode) %x : %s\n", node, node->name);
-    printf("kind: %d\n", node->kind);
-    printf("type: %d\n", node->type);
+    printf("(AstNode) %x : %s\n", self, self->name);
+    printf("kind: %d\n", self->kind);
+    printf("type: %d\n", self->type);
     printf("value: ");
-    value_print(&node->value, node->type);
-    printf("\nlinenum: %d\n", node->linenum);
-    if (node->symbol != NULL)
-        printf("symbol: %x (\"%s\")\n", node->symbol, node->symbol->name);
+    value_print(&self->value, self->type);
+    printf("\nlinenum: %d\n", self->linenum);
+    if (self->symbol != NULL)
+        printf("symbol: %x (\"%s\")\n", self->symbol, self->symbol->name);
 
-    if (node->children != NULL) {
+    if (self->children != NULL) {
         printf("Children\n");
-        temp = node->children;
+        temp = self->children;
         while (temp != NULL) {
             printf("\t(AstNode) %x", temp);
             if (temp->name != NULL)
@@ -158,12 +247,12 @@ ast_node_print(struct AstNode *node)
     }
     printf("\n");
 
-    ast_node_print(node->children);
-    ast_node_print(node->sibling);
+    ast_node_print(self->children);
+    ast_node_print(self->sibling);
 }
 
 void
-ast_node_print_graph(struct AstNode *node)
+ast_node_print_graph(struct AstNode *self)
 {
     printf("/* toypasc AST graph. */\n");
     printf("digraph {\n");
@@ -174,16 +263,16 @@ ast_node_print_graph(struct AstNode *node)
     printf("\tsubgraph cluster_symtab_global {\tstyle=filled;\n");
     printf("\tcolor=\"#EFEFEF\";\n\tfontname=Courier;\n");
     printf("\tnode [style=filled,color=white,fillcolor=\"#CCFF99\"];\n");
-    _ast_node_print_graph_symbol_table(node->symbol);
+    _ast_node_print_graph_symbol_table(self->symbol);
     printf("\t}\n");
 
-    _ast_node_print_graph(node);
+    _ast_node_print_graph(self);
 
     printf("}\n");
 }
 
 static void
-_ast_node_print_graph(struct AstNode *node)
+_ast_node_print_graph(struct AstNode *self)
 {
     int i;
     bool is_program;
@@ -191,16 +280,16 @@ _ast_node_print_graph(struct AstNode *node)
     bool is_funcproc;
     struct AstNode *temp;
 
-    if (node == NULL)
+    if (self == NULL)
         return;
 
-    is_program = node->kind == PROGRAM;
-    is_funcproc = node->kind == PROCEDURE || node->kind == FUNCTION;
+    is_program = self->kind == PROGRAM;
+    is_funcproc = self->kind == PROCEDURE || self->kind == FUNCTION;
     is_cluster = is_program || is_funcproc ||
-                 node->kind == PROG_DECL ||
-                 strstr(node->name, "List");
+                 self->kind == PROGDECL ||
+                 strstr(self->name, "List");
 
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
+    printf("\tnode_%x [label=\"%s\",style=", self, self->name);
 
     if (is_cluster) {
         if (is_program)
@@ -209,43 +298,43 @@ _ast_node_print_graph(struct AstNode *node)
             printf("filled,color=\"#0000FF\",fillcolor=\"#EEEEFF\"];\n");
         else
             printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-        printf("subgraph cluster_%x {\n\tstyle=dotted;\n", node, node->name);
+        printf("subgraph cluster_%x {\n\tstyle=dotted;\n", self, self->name);
     } else
         printf("filled,color=\"#EEFFEE\"];\n");
 
     if (is_funcproc) {
-        printf("\tsubgraph cluster_symtab_0x%x {\tstyle=filled;\n", node->symbol);
+        printf("\tsubgraph cluster_symtab_0x%x {\tstyle=filled;\n", self->symbol);
         printf("\tcolor=\"#EFEFEF\";\n\tfontname=Courier;\n");
         printf("\tnode [style=filled,color=white,fillcolor=\"#CCFF99\"];\n");
-        _ast_node_print_graph_symbol_table(node->symbol);
+        _ast_node_print_graph_symbol_table(self->symbol);
         printf("\t}\n");
     }
 
-    if (node->children != NULL) {
-        temp = node->children;
+    if (self->children != NULL) {
+        temp = self->children;
         while (temp != NULL) {
-            printf("\tnode_%x -> node_%x;\n", node, temp);
+            printf("\tnode_%x -> node_%x;\n", self, temp);
             temp = temp->sibling;
         }
     } else {
-        if (node->symbol != NULL) {
+        if (self->symbol != NULL) {
             printf("\tnode_%x -> symbol_%x [color=lightgray,headport=n];\n",
-                   node, node->symbol);
-        } else if (strstr(node->name, "Literal")) {
-            printf("\tliteral_%x [label=\"", node);
-            value_print(&node->value, node->type);
+                   self, self->symbol);
+        } else if (strstr(self->name, "Literal")) {
+            printf("\tliteral_%x [label=\"", self);
+            value_print(&self->value, self->type);
             printf("\",style=filled,color=\"#FFFFCC\"];\n");
-            printf("\tnode_%x -> literal_%x;\n", node, node);
+            printf("\tnode_%x -> literal_%x;\n", self, self);
         }
 
     }
 
-    _ast_node_print_graph(node->children);
+    _ast_node_print_graph(self->children);
 
     if (is_cluster)
         printf("}\n");
 
-    _ast_node_print_graph(node->sibling);
+    _ast_node_print_graph(self->sibling);
 }
 
 static void

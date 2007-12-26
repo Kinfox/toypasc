@@ -9,6 +9,10 @@ symbol_new(char const * name)
     Symbol * symbol = (Symbol *) malloc (sizeof(Symbol));
     symbol->type = NONE_TYPE;
     value_set(&symbol->value, symbol->type, NULL);
+    symbol->decl_linenum = 0;
+    symbol->params = 0;
+    symbol->param_types = (int *) malloc (sizeof(int) * 10);
+
     symbol->next = NULL;
 
     if (name != NULL)
@@ -34,7 +38,7 @@ symbol_insert(Symbol *symtab, Symbol *symbol)
     if (symbol == NULL)
         return NULL;
 
-    sym = symbol_lookup(symtab->next, symbol->name);
+    sym = symbol_lookup(symtab, symbol->name);
 
     if (sym != NULL) {
         free(symbol->name);
@@ -53,7 +57,7 @@ symbol_lookup(Symbol *symtab, char const *name)
 {
     Symbol *temp;
 
-    for (temp = symtab; temp != NULL; temp = temp->next) {
+    for (temp = symtab->next; temp != NULL; temp = temp->next) {
         if (!strcmp (temp->name, name))
             return temp;
     }
@@ -91,7 +95,8 @@ symbol_print(Symbol *symbol)
     printf("type: %d\n", symbol->type);
     printf("value:");
     value_print(&symbol->value, symbol->type);
-    printf("\nnext: %x\n\n", symbol->next);
+    printf("\ndeclaration line: %d\n", symbol->decl_linenum);
+    printf("next: %x\n\n", symbol->next);
 }
 
 void

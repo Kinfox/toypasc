@@ -12,6 +12,8 @@ struct AstNode {
     Value value;
     Symbol *symbol;
     int linenum;
+    bool has_problem;
+    struct AstNode* parent;
     struct AstNode* children;
     struct AstNode* sibling;
 };
@@ -29,10 +31,7 @@ typedef struct {
     void (*visit_param_list)(struct AstNode *);
     void (*visit_parameter)(struct AstNode *);
     void (*visit_statement_list)(struct AstNode *);
-    void (*visit_printint_stmt)(struct AstNode *);
-    void (*visit_printchar_stmt)(struct AstNode *);
-    void (*visit_printbool_stmt)(struct AstNode *);
-    void (*visit_printline_stmt)(struct AstNode *);
+    void (*visit_print_stmt)(struct AstNode *);
     void (*visit_assignment_stmt)(struct AstNode *);
     void (*visit_if_stmt)(struct AstNode *);
     void (*visit_while_stmt)(struct AstNode *);
@@ -44,6 +43,7 @@ typedef struct {
     void (*visit_call)(struct AstNode *);
     void (*visit_callparam_list)(struct AstNode *);
     void (*visit_literal)(struct AstNode *);
+    void (*close_group)();
 } Visitor;
 
 struct AstNode *ast_node_new(const char* name, int kind, int type,
@@ -52,15 +52,6 @@ void ast_node_destroy(struct AstNode *self);
 
 void ast_node_add_child(struct AstNode *self, struct AstNode *child);
 void ast_node_add_sibling(struct AstNode *self, struct AstNode *sibling);
-
 void ast_node_accept(struct AstNode *self, Visitor *visitor);
-
-Type ast_node_get_type(struct AstNode *self);
-void ast_node_set_type(struct AstNode *self, Type type);
-
-void ast_node_fill_symbol_table(struct AstNode *self, Symbol *symtab);
-
-void ast_node_print(struct AstNode *self);
-void ast_node_print_graph(struct AstNode *self);
 
 #endif // AST_H

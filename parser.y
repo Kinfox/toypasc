@@ -5,7 +5,10 @@
 #include "parser.h"
 #include "ast.h"
 #include "symbol_table.h"
+
 #include "typecheck_visitor.h"
+#include "simpleprinter_visitor.h"
+#include "graphprinter_visitor.h"
 
 /*extern char *yytext;*/
 extern FILE *yyin;
@@ -14,7 +17,6 @@ static void yyerror (/*YYLTYPE *locp, */const char *msg);
 /*int yylex (YYSTYPE *yylval_param, YYLTYPE *yylloc_param);*/
 
 static struct AstNode *ast;
-static Visitor *tpvisitor;
 %}
 
 %defines
@@ -137,7 +139,6 @@ Program:
     ProgramDecl VarDeclList ProcFuncList MainCodeBlock
     {
         struct AstNode *ast_node;
-        struct AstNode *temp;
 
         ast_node = ast_node_new("Program", PROGRAM, NONE_TYPE,
                                 yylloc.last_line, NULL);
@@ -148,17 +149,6 @@ Program:
         $$ = ast_node;
 
         ast = ast_node;
-        //ast_node_accept(ast_node, tpvisitor);
-
-        /*global_symbol_table = symbol_new(NULL);
-        ast_node->symbol = global_symbol_table;
-        for (temp = ast_node->children; temp != NULL; temp = temp->sibling)
-            ast_node_fill_symbol_table(temp, global_symbol_table);
-        */
-
-        //ast_node_print(ast_node);
-        //ast_node_print_graph(ast_node);
-        //symbol_table_dump(ast_node->symbol);
     }
     ;
 
@@ -201,7 +191,6 @@ VarDecl:
         ast_node = ast_node_new("VarDecl", VARDECL, $4,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);
-        ast_node_set_type($2, $4);
         $$ = ast_node;
     }
     ;
@@ -265,7 +254,6 @@ ProcDecl:
     {
         Symbol *symtab;
         struct AstNode *ast_node;
-        struct AstNode *temp;
 
         ast_node = ast_node_new("ProcDecl", PROCEDURE, NONE_TYPE,
                                 yylloc.last_line, NULL);
@@ -274,10 +262,7 @@ ProcDecl:
         ast_node_add_child(ast_node, $7);  // VarDeclList
         ast_node_add_child(ast_node, $8);  // CodeBlock
 
-        symtab = symbol_new(NULL);
-        ast_node->symbol = symtab;
-        for (temp = ast_node->children; temp != NULL; temp = temp->sibling)
-            ast_node_fill_symbol_table(temp, symtab);
+        ast_node->symbol = symbol_new(NULL);
 
         $$ = ast_node;
     }
@@ -289,21 +274,18 @@ FuncDecl:
     {
         Symbol *symtab;
         struct AstNode *ast_node;
-        struct AstNode *temp;
+        struct AstNode *id = (struct AstNode *) $2;
 
         ast_node = ast_node_new("FuncDecl", FUNCTION, $7,
                                 yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $2);  // Identifier
+        ast_node_add_child(ast_node, id);  // Identifier
         ast_node_add_child(ast_node, $4);  // ParamList
         ast_node_add_child(ast_node, $9);  // VarDeclList
         ast_node_add_child(ast_node, $10); // CodeBlock
 
-        ast_node_set_type($2, $7);
+        id->symbol->type = $7;
 
-        symtab = symbol_new(NULL);
-        ast_node->symbol = symtab;
-        for (temp = ast_node->children; temp != NULL; temp = temp->sibling)
-            ast_node_fill_symbol_table(temp, symtab);
+        ast_node->symbol = symbol_new(NULL);
 
         $$ = ast_node;
     }
@@ -335,10 +317,9 @@ SingleParam:
     Identifier T_COLON TYPE_IDENTIFIER
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("SingleParam", PARAMETER, NONE_TYPE,
+        ast_node = ast_node_new("SingleParam", PARAMETER, $3,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);  // Identifier
-        ast_node_set_type(ast_node, $3);
         $$ = ast_node;
     }
     ;
@@ -536,7 +517,7 @@ NotFactor:
     {
         struct AstNode *ast_node;
         struct AstNode *op_ast_node;
-        ast_node = ast_node_new("NotFactor", NOTFACTOR, NONE_TYPE,
+        ast_node = ast_node_new("NotFactor", NOTFACTOR, BOOLEAN,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $2);
@@ -589,21 +570,21 @@ AddOp:
     T_PLUS
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_PLUS, NONE_TYPE,
+        ast_node = ast_node_new($1, T_PLUS, INTEGER,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
     | T_MINUS
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_MINUS, NONE_TYPE,
+        ast_node = ast_node_new($1, T_MINUS, INTEGER,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
     | T_OR
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_OR, NONE_TYPE,
+        ast_node = ast_node_new($1, T_OR, INTEGER,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
@@ -613,21 +594,21 @@ MulOp:
     T_STAR
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_STAR, NONE_TYPE,
+        ast_node = ast_node_new($1, T_STAR, INTEGER,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
     | T_SLASH
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_SLASH, NONE_TYPE,
+        ast_node = ast_node_new($1, T_SLASH, INTEGER,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
     | T_AND
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_AND, NONE_TYPE,
+        ast_node = ast_node_new($1, T_AND, INTEGER,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
@@ -637,42 +618,42 @@ RelOp:
     T_LESSER
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_LESSER, NONE_TYPE,
+        ast_node = ast_node_new($1, T_LESSER, BOOLEAN,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
     | T_LESSEREQUAL
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_LESSEREQUAL, NONE_TYPE,
+        ast_node = ast_node_new($1, T_LESSEREQUAL, BOOLEAN,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
     | T_GREATER
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_GREATER, NONE_TYPE,
+        ast_node = ast_node_new($1, T_GREATER, BOOLEAN,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
     | T_GREATEREQUAL
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_GREATEREQUAL, NONE_TYPE,
+        ast_node = ast_node_new($1, T_GREATEREQUAL, BOOLEAN,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
     | T_EQUAL
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_EQUAL, NONE_TYPE,
+        ast_node = ast_node_new($1, T_EQUAL, BOOLEAN,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
     | T_NOTEQUAL
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_NOTEQUAL, NONE_TYPE,
+        ast_node = ast_node_new($1, T_NOTEQUAL, BOOLEAN,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
@@ -682,7 +663,7 @@ NotOp:
     T_NOT
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_NOT, NONE_TYPE,
+        ast_node = ast_node_new($1, T_NOT, BOOLEAN,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
@@ -691,12 +672,12 @@ NotOp:
 Identifier:
     IDENTIFIER
     {
-        Symbol *symbol;
         struct AstNode *ast_node;
 
         ast_node = ast_node_new("Identifier", IDENTIFIER, NONE_TYPE,
                                 yylloc.last_line, NULL);
         ast_node->symbol = symbol_new($1);
+        ast_node->symbol->decl_linenum = yylloc.last_line;
         $$ = ast_node;
     }
     ;
@@ -736,20 +717,13 @@ yyerror (/*YYLTYPE *locp,*/ const char *msg)
     fprintf(stderr, "[Error] line %d: %s\n", yyget_lineno(), msg);
 }
 
-static void
-visit_ast (struct AstNode *ast_node, Visitor *visitor)
-{
-    struct AstNode *temp;
-
-    ast_node_accept(ast_node, visitor);
-
-    for (temp = ast_node->children; temp != NULL; temp = temp->sibling)
-        ast_node_accept(temp, visitor);
-}
-
 int
 main (int argc, char **argv)
 {
+    Visitor *tpvisitor;
+    Visitor *gpvisitor;
+    Visitor *spvisitor;
+
     if (argc > 1)
         yyin = fopen(argv[1], "r");
     else
@@ -760,8 +734,13 @@ main (int argc, char **argv)
 
     yyparse();
 
-    tpvisitor = typecheck_visitor_new();
-    visit_ast(ast, tpvisitor);
+    tpvisitor = typecheck_new();
+    gpvisitor = graphprinter_new();
+    spvisitor = simpleprinter_new();
+
+    ast_node_accept(ast, tpvisitor);
+    //ast_node_accept(ast, spvisitor);
+    ast_node_accept(ast, gpvisitor);
 
     return 0;
 }

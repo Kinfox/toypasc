@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "base.h"
 
 Type
 type_get_from_lexeme(const char *lexeme)
 {
-    if (!strcmp (lexeme, "Integer"))
+    if (!strcasecmp (lexeme, "Integer"))
         return INTEGER;
-    else if (!strcmp (lexeme, "Boolean"))
+    else if (!strcasecmp (lexeme, "Boolean"))
         return BOOLEAN;
-    else if (!strcmp (lexeme, "Char"))
+    else if (!strcasecmp (lexeme, "Char"))
         return CHAR;
     else
         return NONE_TYPE;
@@ -36,9 +37,9 @@ value_print(Value *value, Type type)
     if (type == INTEGER) {
         printf("%d", value->integer);
     } else if (type == BOOLEAN) {
-        printf("%d", value->boolean);
+        printf("%s", value->boolean ? "true" : "false");
     } else if (type == CHAR) {
-        printf("%c", value->character);
+        printf("'%c'", value->character);
     }
 }
 

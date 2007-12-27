@@ -13,7 +13,7 @@ type_get_from_lexeme(const char *lexeme)
     else if (!strcasecmp (lexeme, "Char"))
         return CHAR;
     else
-        return NONE_TYPE;
+        return VOID;
 }
 
 char *
@@ -71,7 +71,7 @@ value_set(Value *value, Type type, void *val)
         exit(1);
     }
 
-    if (type == NONE_TYPE || val == NULL) {
+    if (type == VOID || val == NULL) {
         value->integer = 0;
     } else if (type == INTEGER) {
        value->integer = *((int *) val);

@@ -6,7 +6,7 @@
 #include "symbol_table.h"
 
 //static bool is_vardecl = FALSE;
-static Type declared_type = NONE_TYPE;
+static Type declared_type = VOID;
 static Symbol *symtab;
 static Symbol *global_symtab;
 

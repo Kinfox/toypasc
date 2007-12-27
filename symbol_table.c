@@ -7,7 +7,7 @@ Symbol *
 symbol_new(char const * name)
 {
     Symbol * symbol = (Symbol *) malloc (sizeof(Symbol));
-    symbol->type = NONE_TYPE;
+    symbol->type = VOID;
     value_set(&symbol->value, symbol->type, NULL);
     symbol->decl_linenum = 0;
     symbol->params = 0;

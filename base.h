@@ -9,7 +9,8 @@ typedef enum {
 } bool;
 
 typedef enum TypeEnum {
-    NONE_TYPE = -1,
+    ERROR = -1,
+    VOID,
     INTEGER,
     BOOLEAN,
     CHAR

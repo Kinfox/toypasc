@@ -96,7 +96,7 @@ void
 typecheck_visit_statement_list(struct AstNode *node)
 {
     is_vardecl = FALSE;
-    declared_type = NONE_TYPE;
+    declared_type = VOID;
     symtab = node->parent->symbol;
 }
 
@@ -119,7 +119,7 @@ typecheck_visit_assignment_stmt (struct AstNode *node)
     }
 
     if (_get_expression_type(node1) != _get_expression_type(node2)) {
-        node->has_problem = TRUE;
+        node->type = ERROR;
         fprintf(stderr,
                 "Error: Incompatible types on assignment operation in line %d.\n",
                 node->linenum);
@@ -155,7 +155,7 @@ typecheck_visit_binary_expr (struct AstNode *node)
     type2 = _get_expression_type(node2);
 
     if (type1 != type2) {
-        node->has_problem = TRUE;
+        node->type = ERROR;
         fprintf(stderr,
                 "Error: Operation '%s' over incompatible types on line %d.\n",
                 operator->name, operator->linenum);
@@ -293,8 +293,10 @@ _get_expression_type(struct AstNode *node)
     switch (node->kind) {
         case IDENTIFIER:
             sym = _symbol_lookup(node->symbol);
-            if (sym != NULL)
+            if (sym != NULL) {
+                node->type = sym->type;
                 return sym->type;
+            }
             break;
 
         case INT_LITERAL:
@@ -313,12 +315,14 @@ _get_expression_type(struct AstNode *node)
         case CALL:
             name = node->children->symbol->name;
             sym = symbol_lookup(global_symtab, name);
-            if (sym != NULL)
+            if (sym != NULL) {
+               node->type = sym->type;
                return sym->type;
+            }
             break;
     }
 
-    return NONE_TYPE;
+    return VOID;
 }
 
 /*static Type
@@ -328,7 +332,7 @@ _get_func_type(struct AstNode *node)
     char *name;
 
     if (node->kind != FUNCTION)
-        return NONE_TYPE;
+        return VOID;
 
     name = node->children->symbol->name;
     symbol = symbol_lookup(global_symtab, name);
@@ -336,7 +340,7 @@ _get_func_type(struct AstNode *node)
     if (symbol == NULL) {
         fprintf(stderr, "Error: Undeclared symbol '%s' in line %d\n",
                 name, node->linenum);
-        return NONE_TYPE;
+        return VOID;
     }
 
     return symbol->type;

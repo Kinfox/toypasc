@@ -21,7 +21,6 @@ ast_node_new(const char* name, int kind, int type,
     node->kind = kind;
     node->type = type;
     node->linenum = linenum;
-    node->has_problem = FALSE;
     node->symbol = symbol;
     node->parent = NULL;
     node->children = NULL;

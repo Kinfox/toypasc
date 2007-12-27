@@ -140,7 +140,7 @@ Program:
     {
         struct AstNode *ast_node;
 
-        ast_node = ast_node_new("Program", PROGRAM, NONE_TYPE,
+        ast_node = ast_node_new("Program", PROGRAM, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $2);
@@ -156,7 +156,7 @@ ProgramDecl:
     T_PROGRAM Identifier T_SEMICOLON
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("ProgramDecl", PROGDECL, NONE_TYPE,
+        ast_node = ast_node_new("ProgramDecl", PROGDECL, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);
         $$ = ast_node;
@@ -168,7 +168,7 @@ VarDeclList:
     | MultiVarDecl
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("VarDeclList", VARDECL_LIST, NONE_TYPE,
+        ast_node = ast_node_new("VarDeclList", VARDECL_LIST, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         $$ = ast_node;
@@ -199,7 +199,7 @@ IdentifierList:
     SingleIdentifier MultiIdentifier
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("IdentifierList", IDENT_LIST, NONE_TYPE,
+        ast_node = ast_node_new("IdentifierList", IDENT_LIST, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_sibling($1, $2);
         ast_node_add_child(ast_node, $1);
@@ -226,7 +226,7 @@ ProcFuncList:
     | ProcFuncDecl MultiProcFuncDecl
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("ProcFuncList", PROCFUNC_LIST, NONE_TYPE,
+        ast_node = ast_node_new("ProcFuncList", PROCFUNC_LIST, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_sibling($1, $2);
         ast_node_add_child(ast_node, $1);
@@ -255,7 +255,7 @@ ProcDecl:
         Symbol *symtab;
         struct AstNode *ast_node;
 
-        ast_node = ast_node_new("ProcDecl", PROCEDURE, NONE_TYPE,
+        ast_node = ast_node_new("ProcDecl", PROCEDURE, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);  // Identifier
         ast_node_add_child(ast_node, $4);  // ParamList
@@ -296,7 +296,7 @@ ParamList:
     | SingleParam MultiParam
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("ParamList", PARAM_LIST, NONE_TYPE,
+        ast_node = ast_node_new("ParamList", PARAM_LIST, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_sibling($1, $2);
         ast_node_add_child(ast_node, $1);
@@ -337,7 +337,7 @@ StatementList:
     Statement MultiStatement
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("StatementList", STATEMENT_LIST, NONE_TYPE,
+        ast_node = ast_node_new("StatementList", STATEMENT_LIST, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_sibling($1, $2);
         ast_node_add_child(ast_node, $1);
@@ -374,7 +374,7 @@ PrintIntStatement:
     T_PRINT_INT T_LPAR Expression T_RPAR
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("PrintIntStatement", PRINTINT_STMT, NONE_TYPE,
+        ast_node = ast_node_new("PrintIntStatement", PRINTINT_STMT, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $3);
         $$ = ast_node;
@@ -385,7 +385,7 @@ PrintCharStatement:
     T_PRINT_CHAR T_LPAR Expression T_RPAR
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("PrintCharStatement", PRINTCHAR_STMT, NONE_TYPE,
+        ast_node = ast_node_new("PrintCharStatement", PRINTCHAR_STMT, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $3);
         $$ = ast_node;
@@ -396,7 +396,7 @@ PrintBoolStatement:
     T_PRINT_BOOL T_LPAR Expression T_RPAR
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("PrintBoolStatement", PRINTBOOL_STMT, NONE_TYPE,
+        ast_node = ast_node_new("PrintBoolStatement", PRINTBOOL_STMT, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $3);
         $$ = ast_node;
@@ -407,7 +407,7 @@ PrintLineStatement:
     T_PRINT_LINE T_LPAR Expression T_RPAR
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("PrintLineStatement", PRINTLINE_STMT, NONE_TYPE,
+        ast_node = ast_node_new("PrintLineStatement", PRINTLINE_STMT, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $3);
         $$ = ast_node;
@@ -418,7 +418,7 @@ Assignment:
     Identifier T_ASSIGNMENT Expression
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("Assignment", ASSIGNMENT_STMT, NONE_TYPE,
+        ast_node = ast_node_new("Assignment", ASSIGNMENT_STMT, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $3);
@@ -430,7 +430,7 @@ IfStatement:
     T_IF Expression T_THEN CodeBlock ElseStatement
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("IfStatement", IF_STMT, NONE_TYPE,
+        ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);
         ast_node_add_child(ast_node, $4);
@@ -448,7 +448,7 @@ WhileStatement:
     T_WHILE T_LPAR Expression T_RPAR T_DO CodeBlock
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("WhileStatement", WHILE_STMT, NONE_TYPE,
+        ast_node = ast_node_new("WhileStatement", WHILE_STMT, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $3);
         ast_node_add_child(ast_node, $6);
@@ -460,7 +460,7 @@ ForStatement:
     T_FOR Assignment T_TO Expression T_DO CodeBlock
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("ForStatement", FOR_STMT, NONE_TYPE,
+        ast_node = ast_node_new("ForStatement", FOR_STMT, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);
         ast_node_add_child(ast_node, $4);
@@ -474,7 +474,7 @@ Expression:
     | SimpleExpression RelOp SimpleExpression
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("RelExpression", REL_EXPR, NONE_TYPE,
+        ast_node = ast_node_new("RelExpression", REL_EXPR, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $2);
@@ -488,7 +488,7 @@ SimpleExpression:
     | SimpleExpression AddOp Term
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("AddExpression", ADD_EXPR, NONE_TYPE,
+        ast_node = ast_node_new("AddExpression", ADD_EXPR, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $2);
@@ -502,7 +502,7 @@ Term:
     | Term MulOp NotFactor
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("MulExpression", MUL_EXPR, NONE_TYPE,
+        ast_node = ast_node_new("MulExpression", MUL_EXPR, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $2);
@@ -536,7 +536,7 @@ Call:
     Identifier T_LPAR CallParamList T_RPAR
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("Call", CALL, NONE_TYPE,
+        ast_node = ast_node_new("Call", CALL, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $3);
@@ -549,7 +549,7 @@ CallParamList:
     | Expression MultiCallParam
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("CallParamList", CALLPARAM_LIST, NONE_TYPE,
+        ast_node = ast_node_new("CallParamList", CALLPARAM_LIST, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_sibling($1, $2);
         ast_node_add_child(ast_node, $1);
@@ -674,7 +674,7 @@ Identifier:
     {
         struct AstNode *ast_node;
 
-        ast_node = ast_node_new("Identifier", IDENTIFIER, NONE_TYPE,
+        ast_node = ast_node_new("Identifier", IDENTIFIER, VOID,
                                 yylloc.last_line, NULL);
         ast_node->symbol = symbol_new($1);
         ast_node->symbol->decl_linenum = yylloc.last_line;

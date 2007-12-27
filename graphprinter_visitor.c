@@ -66,7 +66,7 @@ graphprinter_visit_simplenode (struct AstNode *node)
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
-           node->has_problem ? "FF0000" : "EEFFEE");
+           (node->type == ERROR) ? "FF0000" : "EEFFEE");
 }
 
 void
@@ -144,7 +144,7 @@ graphprinter_visit_binary_expr (struct AstNode *node)
     printf("\tnode_%x [label=\"%s\\n(%s)\",style=",
            node, node->name, node->children->sibling->name);
     printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
-           node->has_problem ? "FF0000" : "EEFFEE");
+           (node->type == ERROR) ? "FF0000" : "EEFFEE");
 }
 
 void

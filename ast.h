@@ -12,7 +12,6 @@ struct AstNode {
     Value value;
     Symbol *symbol;
     int linenum;
-    bool has_problem;
     struct AstNode* parent;
     struct AstNode* children;
     struct AstNode* sibling;

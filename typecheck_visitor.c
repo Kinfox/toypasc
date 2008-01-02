@@ -133,12 +133,12 @@ typecheck_visit_if_stmt (struct AstNode *node)
     struct AstNode *node2 = node1->sibling;
     struct AstNode *node3 = node2->sibling;
 
-    if (_get_expression_type(node1) != BOOLEAN) {
+    /*if (_get_expression_type(node1) != BOOLEAN) {
         node->type = ERROR;
         fprintf(stderr,
                 "Error: Condition for if statement must return a boolean. Check line %d.\n",
                 node->linenum);
-    }
+    }*/
 }
 
 void

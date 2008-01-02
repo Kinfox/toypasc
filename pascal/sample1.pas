@@ -20,8 +20,19 @@ Begin
 End;
 
 Begin
-    a := soma(17, 3) * 70;
-    d := func2();
     n := false;
-    c := (30 * a + 9 / 3) * n;
+
+    if n then
+        begin
+            a := soma(17, 3) * 70;
+        end
+
+    if n = true then
+        begin
+            c := (30 * a + 9 / 3) * n;
+        end
+    else
+        begin
+            d := func2();
+        end
 End.

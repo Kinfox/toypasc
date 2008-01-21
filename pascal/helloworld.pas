@@ -1,3 +1,5 @@
+program helloworld;
+
 Begin
    printchar('H');
    printchar('e');

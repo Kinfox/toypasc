@@ -334,7 +334,8 @@ CodeBlock:
     ;
 
 StatementList:
-    Statement MultiStatement
+    /* empty */ { $$ = NULL; }
+    | Statement MultiStatement
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("StatementList", STATEMENT_LIST, VOID,

@@ -1,3 +1,5 @@
+program variaveis2;
+
 Var
    Num1, Num2, Ans: Integer;
  

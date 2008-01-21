@@ -1,3 +1,5 @@
+program if_prog;
+
 Var
    i: Integer = 3;
  

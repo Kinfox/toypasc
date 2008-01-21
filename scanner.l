@@ -15,6 +15,23 @@
 %option case-insensitive
 
 %%
+"{"                         { int c;
+                              while ((c = input())) {
+                                if (c == '}')
+                                    break;
+                                else if (c == '\n') {
+                                    yylloc->first_line = yylloc->last_line = yylineno;
+                                    yylloc->first_column = 1;
+                                    yylloc->last_column = 0;
+                                } else if (c == EOF) {
+                                    fprintf (stderr,
+                                             "[Error] unexpected EOF inside comment "
+                                             "at line %d\n",
+                                             yylineno);
+                                    exit (1);
+                                }
+                              }
+                            }
 "program"                   { uploc; return T_PROGRAM; }
 "var"                       { uploc; return T_VAR; }
 "integer"|"boolean"|"char"  { uploc;
@@ -109,8 +126,9 @@
 
 .                           { uploc;
                               fprintf (stderr,
-                                       "%d: syntax error: unexpected character ´%s´\n",
+                                       "%d: syntax error: unexpected character '%s'\n",
                                        yylloc->first_line, yytext);
                             }
-%%
 
+
+%%

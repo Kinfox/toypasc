@@ -1,3 +1,5 @@
+program ifelse;
+
 Var
    i: Integer = 50;
 Begin

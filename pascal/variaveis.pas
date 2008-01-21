@@ -1,3 +1,5 @@
+program variaveis;
+
 Var
    i: Integer;
    s: Char;

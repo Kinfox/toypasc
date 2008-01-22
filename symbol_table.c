@@ -57,6 +57,9 @@ symbol_lookup(Symbol *symtab, char const *name)
 {
     Symbol *temp;
 
+    if (symtab == NULL)
+        return NULL;
+
     for (temp = symtab->next; temp != NULL; temp = temp->next) {
         if (!strcmp (temp->name, name))
             return temp;

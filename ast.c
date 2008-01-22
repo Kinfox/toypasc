@@ -22,6 +22,7 @@ ast_node_new(const char* name, int kind, int type,
     node->type = type;
     node->linenum = linenum;
     node->symbol = symbol;
+    node->visited = FALSE;
     node->parent = NULL;
     node->children = NULL;
     node->sibling = NULL;
@@ -37,6 +38,17 @@ ast_node_destroy(struct AstNode *self)
         ast_node_destroy(self->sibling);
         free(self);
     }
+}
+
+void
+ast_node_unset_visited(struct AstNode *self)
+{
+    if (self == NULL)
+        return;
+
+    ast_node_unset_visited(self->children);
+    ast_node_unset_visited(self->sibling);
+    self->visited = FALSE;
 }
 
 void
@@ -82,6 +94,7 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
 
     switch (self->kind) {
         case PROGRAM:
+            ast_node_unset_visited(self);
             visitor->visit_program(self);
             opened_group = TRUE;
             break;

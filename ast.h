@@ -12,6 +12,7 @@ struct AstNode {
     Value value;
     Symbol *symbol;
     int linenum;
+    bool visited;
     struct AstNode* parent;
     struct AstNode* children;
     struct AstNode* sibling;
@@ -49,6 +50,7 @@ struct AstNode *ast_node_new(const char* name, int kind, int type,
                              int linenum, Symbol *symbol);
 void ast_node_destroy(struct AstNode *self);
 
+void ast_node_unset_visited(struct AstNode *self);
 void ast_node_add_child(struct AstNode *self, struct AstNode *child);
 void ast_node_add_sibling(struct AstNode *self, struct AstNode *sibling);
 void ast_node_accept(struct AstNode *self, Visitor *visitor);

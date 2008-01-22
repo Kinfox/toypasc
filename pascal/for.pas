@@ -1,12 +1,19 @@
 program forprog;
 
-var i: Integer;
+var i, j: Integer;
 
 begin
-    for i := 1 to 10 do
-    begin
-        i := i + 1;
-    end
-end.
+    j := 0;
 
+    for i := 0 to 10 do
+        println();
+
+    for i := 0 to 10 do
+    begin
+        j := j * 5 + 1;
+        printint(j)
+    end;
+
+    println()
+end.
 

@@ -99,7 +99,7 @@ static struct AstNode *ast;
 %type <astnode> MultiParam
 
 %type <astnode> MainCodeBlock
-%type <astnode> CodeBlock
+%type <astnode> Statements
 %type <astnode> StatementList
 %type <astnode> MultiStatement
 %type <astnode> Statement
@@ -250,7 +250,7 @@ ProcFuncDecl:
 
 ProcDecl:
     T_PROCEDURE Identifier T_LPAR ParamList T_RPAR T_SEMICOLON VarDeclList
-    CodeBlock T_SEMICOLON
+    T_BEGIN StatementList T_END T_SEMICOLON
     {
         Symbol *symtab;
         struct AstNode *ast_node;
@@ -260,7 +260,7 @@ ProcDecl:
         ast_node_add_child(ast_node, $2);  // Identifier
         ast_node_add_child(ast_node, $4);  // ParamList
         ast_node_add_child(ast_node, $7);  // VarDeclList
-        ast_node_add_child(ast_node, $8);  // CodeBlock
+        ast_node_add_child(ast_node, $9);  // Statements
 
         ast_node->symbol = symbol_new(NULL);
 
@@ -270,7 +270,7 @@ ProcDecl:
 
 FuncDecl:
     T_FUNCTION Identifier T_LPAR ParamList T_RPAR T_COLON TYPE_IDENTIFIER
-    T_SEMICOLON VarDeclList CodeBlock T_SEMICOLON
+    T_SEMICOLON VarDeclList T_BEGIN StatementList T_END T_SEMICOLON
     {
         Symbol *symtab;
         struct AstNode *ast_node;
@@ -281,7 +281,7 @@ FuncDecl:
         ast_node_add_child(ast_node, id);  // Identifier
         ast_node_add_child(ast_node, $4);  // ParamList
         ast_node_add_child(ast_node, $9);  // VarDeclList
-        ast_node_add_child(ast_node, $10); // CodeBlock
+        ast_node_add_child(ast_node, $11); // Statements
 
         id->symbol->type = $7;
 
@@ -326,11 +326,12 @@ SingleParam:
 
 MainCodeBlock:
     /* empty */ { $$ = NULL; }
-    | CodeBlock T_DOT { $$ = $1; }
+    | T_BEGIN StatementList T_END T_DOT { $$ = $2; }
     ;
 
-CodeBlock:
-    T_BEGIN StatementList T_END { $$ = $2; }
+Statements:
+    Statement { $$ = $1; }
+    | T_BEGIN StatementList T_END { $$ = $2; }
     ;
 
 StatementList:
@@ -348,15 +349,15 @@ StatementList:
 
 MultiStatement:
     /* empty */ { $$ = NULL; }
-    | Statement MultiStatement
+    | T_SEMICOLON Statement MultiStatement
     {
-        ast_node_add_sibling($1, $2);
-        $$ = $1;
+        ast_node_add_sibling($2, $3);
+        $$ = $2;
     }
     ;
 
 Statement:
-    Assignment T_SEMICOLON { $$ = $1; }
+    Assignment { $$ = $1; }
     | IfStatement { $$ = $1; }
     | WhileStatement { $$ = $1; }
     | ForStatement { $$ = $1; }
@@ -405,12 +406,11 @@ PrintBoolStatement:
     ;
 
 PrintLineStatement:
-    T_PRINT_LINE T_LPAR Expression T_RPAR
+    T_PRINT_LINE T_LPAR T_RPAR
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("PrintLineStatement", PRINTLINE_STMT, VOID,
                                 yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $3);
         $$ = ast_node;
     }
     ;
@@ -428,7 +428,7 @@ Assignment:
     ;
 
 IfStatement:
-    T_IF Expression T_THEN CodeBlock ElseStatement
+    T_IF Expression T_THEN Statements ElseStatement
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
@@ -442,11 +442,11 @@ IfStatement:
 
 ElseStatement:
     /* empty */ { $$ = NULL; }
-    | T_ELSE CodeBlock { $$ = $2; }
+    | T_ELSE Statements { $$ = $2; }
     ;
 
 WhileStatement:
-    T_WHILE T_LPAR Expression T_RPAR T_DO CodeBlock
+    T_WHILE T_LPAR Expression T_RPAR T_DO Statements
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("WhileStatement", WHILE_STMT, VOID,
@@ -458,14 +458,14 @@ WhileStatement:
     ;
 
 ForStatement:
-    T_FOR Assignment T_TO Expression T_DO CodeBlock
+    T_FOR Assignment T_TO Expression T_DO Statements
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("ForStatement", FOR_STMT, VOID,
                                 yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $2);
-        ast_node_add_child(ast_node, $4);
-        ast_node_add_child(ast_node, $6);
+        ast_node_add_child(ast_node, $2); // Assignment
+        ast_node_add_child(ast_node, $4); // Expression
+        ast_node_add_child(ast_node, $6); // Statements
         $$ = ast_node;
     }
     ;

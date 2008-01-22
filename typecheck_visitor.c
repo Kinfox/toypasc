@@ -149,6 +149,35 @@ typecheck_visit_while_stmt (struct AstNode *node)
 void
 typecheck_visit_for_stmt (struct AstNode *node)
 {
+    Type type;
+    struct AstNode *assign_node = node->children;
+    struct AstNode *id_node = assign_node->children;
+    struct AstNode *expr1_node = id_node->sibling;
+    struct AstNode *expr2_node = assign_node->sibling;
+
+    type = _get_expression_type(id_node);
+    if (type != INTEGER) {
+        node->type = ERROR;
+        fprintf(stderr,
+                "Error: Identifier '%s' is not of Integer type. "
+                "Check line %d.\n",
+                id_node->symbol->name, id_node->linenum);
+    }
+    type = _get_expression_type(expr1_node);
+    if (type != INTEGER) {
+        node->type = ERROR;
+        fprintf(stderr,
+                "Error: Initial value of '%s' is not of Integer type. "
+                "Check line %d.\n",
+                id_node->symbol->name, expr1_node->linenum);
+    }
+    type = _get_expression_type(expr1_node);
+    if (type != INTEGER) {
+        node->type = ERROR;
+        fprintf(stderr,
+                "Error: Value of stop condition is not of Integer type. "
+                "Check line %d.\n", expr2_node->linenum);
+    }
 }
 
 void

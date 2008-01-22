@@ -23,7 +23,10 @@ typecheck_new()
     tc_visitor->visit_param_list = &typecheck_visit_donothing;
     tc_visitor->visit_parameter = &typecheck_visit_parameter;
     tc_visitor->visit_statement_list = &typecheck_visit_statement_list;
-    tc_visitor->visit_print_stmt = &typecheck_visit_print_stmt;
+    tc_visitor->visit_printint_stmt = &typecheck_visit_printint_stmt;
+    tc_visitor->visit_printchar_stmt = &typecheck_visit_printchar_stmt;
+    tc_visitor->visit_printbool_stmt = &typecheck_visit_printbool_stmt;
+    tc_visitor->visit_printline_stmt = &typecheck_visit_donothing;
     tc_visitor->visit_assignment_stmt = &typecheck_visit_assignment_stmt;
     tc_visitor->visit_if_stmt = &typecheck_visit_if_stmt;
     tc_visitor->visit_while_stmt = &typecheck_visit_while_stmt;
@@ -100,9 +103,34 @@ typecheck_visit_statement_list(struct AstNode *node)
     symtab = node->parent->symbol;
 }
 
-void
-typecheck_visit_print_stmt (struct AstNode *node)
+static void
+_typecheck_print_stmt(struct AstNode *node, Type type, const char *type_str)
 {
+    if (_get_expression_type(node->children) != type) {
+        node->type = ERROR;
+        fprintf(stderr,
+                "Error: Expression Print%s statement must be of "
+                "%s type. Check line %d.\n",
+                type_str, type_get_lexeme(type), node->linenum);
+    }
+}
+
+void
+typecheck_visit_printint_stmt (struct AstNode *node)
+{
+    _typecheck_print_stmt(node, INTEGER, "Int");
+}
+
+void
+typecheck_visit_printchar_stmt (struct AstNode *node)
+{
+    _typecheck_print_stmt(node, CHAR, "Char");
+}
+
+void
+typecheck_visit_printbool_stmt (struct AstNode *node)
+{
+    _typecheck_print_stmt(node, BOOLEAN, "Bool");
 }
 
 void
@@ -129,21 +157,29 @@ typecheck_visit_assignment_stmt (struct AstNode *node)
 void
 typecheck_visit_if_stmt (struct AstNode *node)
 {
-    struct AstNode *node1 = node->children;
-    struct AstNode *node2 = node1->sibling;
-    struct AstNode *node3 = node2->sibling;
+    struct AstNode *expr = node->children;
 
-    /*if (_get_expression_type(node1) != BOOLEAN) {
+    if (_get_expression_type(expr) != BOOLEAN) {
         node->type = ERROR;
         fprintf(stderr,
-                "Error: Condition for if statement must return a boolean. Check line %d.\n",
-                node->linenum);
-    }*/
+                "Error: Condition for if statement must be of Boolean type. "
+                "Check line %d.\n", node->linenum);
+    }
 }
 
 void
 typecheck_visit_while_stmt (struct AstNode *node)
 {
+    Type type;
+    struct AstNode *expr = node->children;
+
+    type = _get_expression_type(expr);
+    if (type != BOOLEAN) {
+        node->type = ERROR;
+        fprintf(stderr,
+                "Error: Expression in While statement must be of "
+                "Boolean type. Check line %d.\n", expr->linenum);
+    }
 }
 
 void
@@ -185,7 +221,6 @@ typecheck_visit_binary_expr (struct AstNode *node)
 {
     Type type1;
     Type type2;
-    Symbol *symbol;
     struct AstNode *node1 = node->children;
     struct AstNode *operator = node1->sibling;
     struct AstNode *node2 = operator->sibling;
@@ -204,6 +239,14 @@ typecheck_visit_binary_expr (struct AstNode *node)
 void
 typecheck_visit_notfactor (struct AstNode *node)
 {
+    Type type = _get_expression_type(node->children->sibling);
+
+    if (type != BOOLEAN) {
+        node->type = ERROR;
+        fprintf(stderr,
+                "Error: Operation 'not' over non-boolean type on line %d.\n",
+                node->linenum);
+    }
 }
 
 void
@@ -346,10 +389,12 @@ _get_expression_type(struct AstNode *node)
         case NOTFACTOR:
             return BOOLEAN;
 
-        case ADD_EXPR:
-        case MUL_EXPR:
-        case REL_EXPR:
-            return INTEGER;
+        //case ADD_EXPR:
+        //case MUL_EXPR:
+        //    return INTEGER;
+
+        //case REL_EXPR:
+        //    return BOOLEAN;
 
         case CALL:
             name = node->children->symbol->name;
@@ -359,9 +404,10 @@ _get_expression_type(struct AstNode *node)
                return sym->type;
             }
             break;
-    }
 
-    return VOID;
+        default:
+            return node->type;
+    }
 }
 
 /*static Type

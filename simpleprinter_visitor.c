@@ -19,7 +19,10 @@ simpleprinter_new()
     sp_visitor->visit_param_list = &simpleprinter_visit;
     sp_visitor->visit_parameter = &simpleprinter_visit;
     sp_visitor->visit_statement_list = &simpleprinter_visit;
-    sp_visitor->visit_print_stmt = &simpleprinter_visit;
+    sp_visitor->visit_printint_stmt = &simpleprinter_visit;
+    sp_visitor->visit_printchar_stmt = &simpleprinter_visit;
+    sp_visitor->visit_printbool_stmt = &simpleprinter_visit;
+    sp_visitor->visit_printline_stmt = &simpleprinter_visit;
     sp_visitor->visit_assignment_stmt = &simpleprinter_visit;
     sp_visitor->visit_if_stmt = &simpleprinter_visit;
     sp_visitor->visit_while_stmt = &simpleprinter_visit;

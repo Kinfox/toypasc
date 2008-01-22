@@ -135,10 +135,16 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
             opened_group = TRUE;
             break;
         case PRINTINT_STMT:
+            visitor->visit_printint_stmt(self);
+            break;
         case PRINTCHAR_STMT:
+            visitor->visit_printchar_stmt(self);
+            break;
         case PRINTBOOL_STMT:
+            visitor->visit_printbool_stmt(self);
+            break;
         case PRINTLINE_STMT:
-            visitor->visit_print_stmt(self);
+            visitor->visit_printline_stmt(self);
             break;
         case ASSIGNMENT_STMT:
             visitor->visit_assignment_stmt(self);

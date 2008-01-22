@@ -4,6 +4,8 @@
 #include "parser.h"
 
 #define uploc   { yylloc->first_column = yylloc->last_column + 1; yylloc->last_column += yyleng; }
+
+#define CAST_BOOLEAN(strb)  strcasecmp(strb, "False") ? TRUE : FALSE
 /*#define YY_DECL int yylex (YYSTYPE *yylval_param)*/
 %}
 
@@ -25,7 +27,7 @@
                                     yylloc->last_column = 0;
                                 } else if (c == EOF) {
                                     fprintf (stderr,
-                                             "[Error] unexpected EOF inside comment "
+                                             "Error: unexpected EOF inside comment "
                                              "at line %d\n",
                                              yylineno);
                                     exit (1);
@@ -45,7 +47,7 @@
 "end"                       { uploc; return T_END; }
 
 "printInt"                  { uploc; return T_PRINT_INT; }
-"printBoolean"              { uploc; return T_PRINT_BOOL; }
+"printBool"                 { uploc; return T_PRINT_BOOL; }
 "printChar"                 { uploc; return T_PRINT_CHAR; }
 "println"                   { uploc; return T_PRINT_LINE; }
 
@@ -105,7 +107,8 @@
 "."                         { uploc; return T_DOT; }
 ","                         { uploc; return T_COMMA; }
 
-"true"|"false"              { uploc; yylval->boolean=strcmp(yytext, "False");
+"true"|"false"              { uploc;
+                              yylval->boolean=CAST_BOOLEAN(yytext);
                               return BOOL_LITERAL;
                             }
 "'"."'"                     { uploc; yylval->character=yytext[1];
@@ -126,8 +129,9 @@
 
 .                           { uploc;
                               fprintf (stderr,
-                                       "%d: syntax error: unexpected character '%s'\n",
-                                       yylloc->first_line, yytext);
+                                       "Syntax Error: unexpected "
+                                       "character '%s' at line %d\n",
+                                       yytext, yylloc->first_line);
                             }
 
 

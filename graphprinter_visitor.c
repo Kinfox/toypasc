@@ -23,7 +23,10 @@ graphprinter_new()
     gp_visitor->visit_param_list = &graphprinter_visit_param_list;
     gp_visitor->visit_parameter = &graphprinter_visit_simplenode;
     gp_visitor->visit_statement_list = &graphprinter_visit_statement_list;
-    gp_visitor->visit_print_stmt = &graphprinter_visit_simplenode;
+    gp_visitor->visit_printint_stmt = &graphprinter_visit_simplenode;
+    gp_visitor->visit_printchar_stmt = &graphprinter_visit_simplenode;
+    gp_visitor->visit_printbool_stmt = &graphprinter_visit_simplenode;
+    gp_visitor->visit_printline_stmt = &graphprinter_visit_simplenode;
     gp_visitor->visit_assignment_stmt = &graphprinter_visit_simplenode;
     gp_visitor->visit_if_stmt = &graphprinter_visit_simplenode;
     gp_visitor->visit_while_stmt = &graphprinter_visit_simplenode;

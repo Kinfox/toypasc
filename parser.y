@@ -446,13 +446,13 @@ ElseStatement:
     ;
 
 WhileStatement:
-    T_WHILE T_LPAR Expression T_RPAR T_DO Statements
+    T_WHILE Expression T_DO Statements
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("WhileStatement", WHILE_STMT, VOID,
                                 yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $3);
-        ast_node_add_child(ast_node, $6);
+        ast_node_add_child(ast_node, $2);
+        ast_node_add_child(ast_node, $4);
         $$ = ast_node;
     }
     ;
@@ -475,7 +475,7 @@ Expression:
     | SimpleExpression RelOp SimpleExpression
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("RelExpression", REL_EXPR, VOID,
+        ast_node = ast_node_new("RelExpression", REL_EXPR, BOOLEAN,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $2);
@@ -489,7 +489,9 @@ SimpleExpression:
     | SimpleExpression AddOp Term
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("AddExpression", ADD_EXPR, VOID,
+        Type type = ((struct AstNode *) $2)->type;
+
+        ast_node = ast_node_new("AddExpression", ADD_EXPR, type,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $2);
@@ -503,7 +505,9 @@ Term:
     | Term MulOp NotFactor
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("MulExpression", MUL_EXPR, VOID,
+        Type type = ((struct AstNode *) $2)->type;
+
+        ast_node = ast_node_new("MulExpression", MUL_EXPR, type,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $2);
@@ -585,7 +589,7 @@ AddOp:
     | T_OR
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_OR, INTEGER,
+        ast_node = ast_node_new($1, T_OR, BOOLEAN,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
@@ -609,7 +613,7 @@ MulOp:
     | T_AND
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_AND, INTEGER,
+        ast_node = ast_node_new($1, T_AND, BOOLEAN,
                                 yylloc.last_line, NULL);
         $$ = ast_node;
     }
@@ -715,7 +719,7 @@ Literal:
 static void
 yyerror (/*YYLTYPE *locp,*/ const char *msg)
 {
-    fprintf(stderr, "[Error] line %d: %s\n", yyget_lineno(), msg);
+    fprintf(stderr, "Error: line %d: %s\n", yyget_lineno(), msg);
 }
 
 int

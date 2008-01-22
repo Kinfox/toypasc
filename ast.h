@@ -31,7 +31,10 @@ typedef struct {
     void (*visit_param_list)(struct AstNode *);
     void (*visit_parameter)(struct AstNode *);
     void (*visit_statement_list)(struct AstNode *);
-    void (*visit_print_stmt)(struct AstNode *);
+    void (*visit_printint_stmt)(struct AstNode *);
+    void (*visit_printchar_stmt)(struct AstNode *);
+    void (*visit_printbool_stmt)(struct AstNode *);
+    void (*visit_printline_stmt)(struct AstNode *);
     void (*visit_assignment_stmt)(struct AstNode *);
     void (*visit_if_stmt)(struct AstNode *);
     void (*visit_while_stmt)(struct AstNode *);

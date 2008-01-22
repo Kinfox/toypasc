@@ -1,51 +1,51 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "graphprinter_visitor.h"
+#include "pseudo_codegen_visitor.h"
 
 static bool is_symboldecl = FALSE;
 static void _print_symbol_table(struct AstNode *node);
 static void _print_symbols(Symbol *symbol);
 
 Visitor *
-graphprinter_new()
+pseudo_codegen_new()
 {
     Visitor *visitor = (Visitor *) malloc (sizeof(Visitor));
 
-    visitor->visit_program = &graphprinter_visit_program;
-    visitor->visit_programdecl = &graphprinter_visit_programdecl;
-    visitor->visit_vardecl_list = &graphprinter_visit_vardecl_list;
-    visitor->visit_vardecl = &graphprinter_visit_simplenode;
-    visitor->visit_identifier_list = &graphprinter_visit_identifier_list;
-    visitor->visit_procfunc_list = &graphprinter_visit_procfunc_list;
-    visitor->visit_procedure = &graphprinter_visit_procfunc;
-    visitor->visit_function = &graphprinter_visit_procfunc;
-    visitor->visit_param_list = &graphprinter_visit_param_list;
-    visitor->visit_parameter = &graphprinter_visit_simplenode;
-    visitor->visit_statement_list = &graphprinter_visit_statement_list;
-    visitor->visit_printint_stmt = &graphprinter_visit_simplenode;
-    visitor->visit_printchar_stmt = &graphprinter_visit_simplenode;
-    visitor->visit_printbool_stmt = &graphprinter_visit_simplenode;
-    visitor->visit_printline_stmt = &graphprinter_visit_simplenode;
-    visitor->visit_assignment_stmt = &graphprinter_visit_simplenode;
-    visitor->visit_if_stmt = &graphprinter_visit_simplenode;
-    visitor->visit_while_stmt = &graphprinter_visit_simplenode;
-    visitor->visit_for_stmt = &graphprinter_visit_simplenode;
-    visitor->visit_rel_expr = &graphprinter_visit_binary_expr;
-    visitor->visit_add_expr = &graphprinter_visit_binary_expr;
-    visitor->visit_mul_expr = &graphprinter_visit_binary_expr;
-    visitor->visit_notfactor = &graphprinter_visit_simplenode;
-    visitor->visit_call = &graphprinter_visit_simplenode;
-    visitor->visit_callparam_list = &graphprinter_visit_callparam_list;
-    visitor->visit_identifier = &graphprinter_visit_identifier;
-    visitor->visit_literal = &graphprinter_visit_literal;
-    visitor->close_group = &graphprinter_close_group;
+    visitor->visit_program = &pseudo_codegen_visit_program;
+    visitor->visit_programdecl = &pseudo_codegen_visit_programdecl;
+    visitor->visit_vardecl_list = &pseudo_codegen_visit_vardecl_list;
+    visitor->visit_vardecl = &pseudo_codegen_visit_simplenode;
+    visitor->visit_identifier_list = &pseudo_codegen_visit_identifier_list;
+    visitor->visit_procfunc_list = &pseudo_codegen_visit_procfunc_list;
+    visitor->visit_procedure = &pseudo_codegen_visit_procfunc;
+    visitor->visit_function = &pseudo_codegen_visit_procfunc;
+    visitor->visit_param_list = &pseudo_codegen_visit_param_list;
+    visitor->visit_parameter = &pseudo_codegen_visit_simplenode;
+    visitor->visit_statement_list = &pseudo_codegen_visit_statement_list;
+    visitor->visit_printint_stmt = &pseudo_codegen_visit_simplenode;
+    visitor->visit_printchar_stmt = &pseudo_codegen_visit_simplenode;
+    visitor->visit_printbool_stmt = &pseudo_codegen_visit_simplenode;
+    visitor->visit_printline_stmt = &pseudo_codegen_visit_simplenode;
+    visitor->visit_assignment_stmt = &pseudo_codegen_visit_simplenode;
+    visitor->visit_if_stmt = &pseudo_codegen_visit_simplenode;
+    visitor->visit_while_stmt = &pseudo_codegen_visit_simplenode;
+    visitor->visit_for_stmt = &pseudo_codegen_visit_simplenode;
+    visitor->visit_rel_expr = &pseudo_codegen_visit_binary_expr;
+    visitor->visit_add_expr = &pseudo_codegen_visit_binary_expr;
+    visitor->visit_mul_expr = &pseudo_codegen_visit_binary_expr;
+    visitor->visit_notfactor = &pseudo_codegen_visit_simplenode;
+    visitor->visit_call = &pseudo_codegen_visit_simplenode;
+    visitor->visit_callparam_list = &pseudo_codegen_visit_callparam_list;
+    visitor->visit_identifier = &pseudo_codegen_visit_identifier;
+    visitor->visit_literal = &pseudo_codegen_visit_literal;
+    visitor->close_group = &pseudo_codegen_close_group;
 
     return visitor;
 }
 
 void
-graphprinter_visit_program(struct AstNode *node)
+pseudo_codegen_visit_program(struct AstNode *node)
 {
     struct AstNode *temp;
 
@@ -66,7 +66,7 @@ graphprinter_visit_program(struct AstNode *node)
 }
 
 void
-graphprinter_visit_simplenode (struct AstNode *node)
+pseudo_codegen_visit_simplenode (struct AstNode *node)
 {
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
@@ -75,7 +75,7 @@ graphprinter_visit_simplenode (struct AstNode *node)
 }
 
 void
-graphprinter_visit_programdecl(struct AstNode *node)
+pseudo_codegen_visit_programdecl(struct AstNode *node)
 {
     is_symboldecl = TRUE;
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
@@ -84,7 +84,7 @@ graphprinter_visit_programdecl(struct AstNode *node)
 }
 
 void
-graphprinter_visit_vardecl_list (struct AstNode *node)
+pseudo_codegen_visit_vardecl_list (struct AstNode *node)
 {
     is_symboldecl = TRUE;
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
@@ -94,7 +94,7 @@ graphprinter_visit_vardecl_list (struct AstNode *node)
 }
 
 void
-graphprinter_visit_identifier_list (struct AstNode *node)
+pseudo_codegen_visit_identifier_list (struct AstNode *node)
 {
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
@@ -103,7 +103,7 @@ graphprinter_visit_identifier_list (struct AstNode *node)
 }
 
 void
-graphprinter_visit_procfunc_list (struct AstNode *node)
+pseudo_codegen_visit_procfunc_list (struct AstNode *node)
 {
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
@@ -111,7 +111,7 @@ graphprinter_visit_procfunc_list (struct AstNode *node)
 }
 
 void
-graphprinter_visit_procfunc (struct AstNode *node)
+pseudo_codegen_visit_procfunc (struct AstNode *node)
 {
     is_symboldecl = TRUE;
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
@@ -123,7 +123,7 @@ graphprinter_visit_procfunc (struct AstNode *node)
 }
 
 void
-graphprinter_visit_param_list (struct AstNode *node)
+pseudo_codegen_visit_param_list (struct AstNode *node)
 {
     is_symboldecl = TRUE;
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
@@ -133,7 +133,7 @@ graphprinter_visit_param_list (struct AstNode *node)
 }
 
 void
-graphprinter_visit_statement_list (struct AstNode *node)
+pseudo_codegen_visit_statement_list (struct AstNode *node)
 {
     is_symboldecl = FALSE;
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
@@ -143,7 +143,7 @@ graphprinter_visit_statement_list (struct AstNode *node)
 }
 
 void
-graphprinter_visit_binary_expr (struct AstNode *node)
+pseudo_codegen_visit_binary_expr (struct AstNode *node)
 {
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
     printf("\tnode_%x [label=\"%s\\n(%s)\",style=",
@@ -153,7 +153,7 @@ graphprinter_visit_binary_expr (struct AstNode *node)
 }
 
 void
-graphprinter_visit_callparam_list (struct AstNode *node)
+pseudo_codegen_visit_callparam_list (struct AstNode *node)
 {
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
@@ -162,7 +162,7 @@ graphprinter_visit_callparam_list (struct AstNode *node)
 }
 
 void
-graphprinter_visit_identifier (struct AstNode *node)
+pseudo_codegen_visit_identifier (struct AstNode *node)
 {
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
@@ -183,7 +183,7 @@ graphprinter_visit_identifier (struct AstNode *node)
 }
 
 void
-graphprinter_visit_literal (struct AstNode *node)
+pseudo_codegen_visit_literal (struct AstNode *node)
 {
     printf("\tnode_%x -> literal_%x;\n", node->parent, node);
     printf("\tliteral_%x [label=\"", node);
@@ -192,7 +192,7 @@ graphprinter_visit_literal (struct AstNode *node)
 }
 
 void
-graphprinter_close_group ()
+pseudo_codegen_close_group ()
 {
     printf("}\n");
 }

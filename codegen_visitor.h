@@ -5,11 +5,6 @@
 #include "base.h"
 #include "symbol_table.h"
 
-//static bool is_vardecl = FALSE;
-static Type declared_type = VOID;
-static Symbol *symtab;
-static Symbol *global_symtab;
-
 Visitor *codegen_new();
 
 void codegen_visit_program (struct AstNode *node);
@@ -20,7 +15,10 @@ void codegen_visit_vardecl_list (struct AstNode *node);
 void codegen_visit_vardecl (struct AstNode *node);
 void codegen_visit_parameter (struct AstNode *node);
 void codegen_visit_statement_list(struct AstNode *node);
-void codegen_visit_print_stmt (struct AstNode *node);
+void codegen_visit_printint_stmt (struct AstNode *node);
+void codegen_visit_printchar_stmt (struct AstNode *node);
+void codegen_visit_printbool_stmt (struct AstNode *node);
+void codegen_visit_printline_stmt (struct AstNode *node);
 void codegen_visit_assignment_stmt (struct AstNode *node);
 void codegen_visit_if_stmt (struct AstNode *node);
 void codegen_visit_while_stmt (struct AstNode *node);

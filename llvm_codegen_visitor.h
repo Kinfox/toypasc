@@ -3,7 +3,12 @@
 
 #include "ast.h"
 
-#define TAB         "    "
+#define TAB             "    "
+#define PRINT_TYPE(t)   if (t == VOID) printf("void"); \
+                        else printf("i%d", _get_type_size(t))
+
+static Symbol *symtab;
+static Symbol *global_symtab;
 
 Visitor *llvm_codegen_new();
 

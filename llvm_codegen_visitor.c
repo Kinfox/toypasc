@@ -65,7 +65,7 @@ llvm_codegen_visit_program(struct _Visitor *visitor, struct AstNode *node)
 
     if (child != NULL) {
         printf("; Definition of main function\n");
-        printf("define i32 @main()\n{\n");
+        printf("define i32 @main () {\n");
         ast_node_accept(child, visitor);
         printf(TAB"ret i32 0\n}\n\n");
     }
@@ -116,18 +116,18 @@ llvm_codegen_visit_procfunc_list (struct _Visitor *visitor, struct AstNode *node
 void
 llvm_codegen_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
 {
-    const char *type;
     struct AstNode *child;
 
-    //type = _get_type_string(node->type);
     pf_name = _create_temporary();
 
-    printf("%s\n", type);
+    printf("define ");
+    PRINT_TYPE(node->type);
+    printf(" ");
 
     child = node->children; // Identifier
     ast_node_accept(child, visitor);
 
-    printf(" (");
+    printf(" ( ");
 
     child = child->sibling;
     if (child->kind == PARAM_LIST) {
@@ -135,10 +135,14 @@ llvm_codegen_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
         child = child->sibling;
     }
 
-    printf(")\n{\n");
+    printf(" ) {\n");
+    printf("entry:\n");
 
-    if (node->kind == FUNCTION)
-        printf(TAB"%s %s;\n", type, pf_name);
+    if (node->kind == FUNCTION) {
+        printf(TAB);
+        PRINT_TYPE(node->type);
+        printf(" %%%s\n", pf_name);
+    }
 
     if (child->kind == VARDECL_LIST) {
         ast_node_accept(child, visitor);
@@ -149,9 +153,13 @@ llvm_codegen_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
 
     ast_node_accept(child, visitor);
 
+    printf(TAB"ret ");
+    PRINT_TYPE(node->type);
+
     if (node->kind == FUNCTION)
-        printf("\n"TAB"return %s;\n", pf_name);
-    printf("}\n\n");
+        printf(" %s", pf_name);
+
+    printf("\n}\n\n");
 
     free(pf_name);
 }
@@ -198,8 +206,8 @@ llvm_codegen_visit_callparam_list (struct _Visitor *visitor, struct AstNode *nod
 void
 llvm_codegen_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
-    // FIXME: verificar se eh global(@) ou local(%)
-    printf("@%s", node->symbol->name);
+    printf("%c%s", node->symbol->is_global ? '@' : '%',
+                   node->symbol->name);
 }
 
 void
@@ -235,6 +243,8 @@ llvm_codegen_visit_vardecl (struct _Visitor *visitor, struct AstNode *node)
 void
 llvm_codegen_visit_parameter (struct _Visitor *visitor, struct AstNode *node)
 {
+    PRINT_TYPE(node->type);
+    printf(" ");
     ast_node_accept(node->children, visitor);
 }
 
@@ -365,8 +375,22 @@ llvm_codegen_visit_notfactor (struct _Visitor *visitor, struct AstNode *node)
 void
 llvm_codegen_visit_call (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("%s ();\n", node->symbol->name);
-    ast_node_accept(node->children, visitor);
+    struct AstNode *child = node->children;
+
+    printf("call ");
+    PRINT_TYPE(child->symbol->type);
+    printf(" ");
+    ast_node_accept(child, visitor);
+    printf("( ");
+    for (child = child->sibling->children; child != NULL;
+         child = child->sibling) {
+        PRINT_TYPE(child->type);
+        printf(" ");
+        ast_node_accept(child, visitor);
+        if (child->sibling != NULL)
+            printf(", ");
+    }
+    printf(" )\n");
 }
 
 void

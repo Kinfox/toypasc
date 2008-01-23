@@ -4,18 +4,18 @@ Var x : Integer;
 var a, b: Boolean;
 var c: char;
 
-{Procedure myproc (pint: Integer, pbool : Boolean);
-Var i : Integer;
+Procedure myproc (i : integer);
 Begin
-  a := 3;
+    printint(i)
 End;
 
-FunCtion otherfnc () : Char;
+FunCtion myfunc (i : integer) : integer;
 Begin
-    otherfunc := 'Z';
+    myfunc := 539;
+    println()
 End;
 
-FunCtion myfunc (fint : Integer, fchar: Char) : Integer;
+{FunCtion otherfunc (fint : Integer, fchar: Char) : Integer;
 var myvar : Boolean;
 var c : Char;
 Begin
@@ -26,9 +26,12 @@ End;
 
 Begin
     {x := 2;}
-    x := 2 + 3 * 5 + 9;
+    {x := 2 + 3 * 5 + 9;}
     printint(137);
-    {x := myfunc(x, 'W');}
+    println();
+    myproc(1);
+    x := myfunc(65);
+    printint(x);
     {printbool(false);
     printchar('\n');
     printchar('W');

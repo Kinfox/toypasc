@@ -18,7 +18,6 @@ bool simple_flag = FALSE;
 bool graph_flag = FALSE;
 bool c_flag = FALSE;
 bool llvm_flag = FALSE;
-//char *output = NULL;
 
 int opts;
 
@@ -786,6 +785,11 @@ main (int argc, char **argv)
     /* Verificacao de tipos. */
     visitor = typecheck_new();
     ast_node_accept(ast, visitor);
+
+    if (ast_node_check_errors(ast)) {
+        fprintf(stderr, "Too many errors. Aborting.\n");
+        return 1;
+    }
 
     /* Mostra estrutura da AST em forma de texto. */
     if (simple_flag)

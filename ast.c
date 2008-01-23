@@ -40,6 +40,22 @@ ast_node_destroy(struct AstNode *self)
     }
 }
 
+bool
+ast_node_check_errors(struct AstNode *self)
+{
+    struct AstNode *child;
+
+    if (self == NULL || self->type == ERROR)
+        return TRUE;
+
+    for (child = self->children; child != NULL; child = child->sibling) {
+        if (ast_node_check_errors(child) == TRUE)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
 void
 ast_node_unset_visited(struct AstNode *self)
 {

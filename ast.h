@@ -58,6 +58,7 @@ struct AstNode *ast_node_new(const char *name, int kind, int type,
                              int linenum, Symbol *symbol);
 void ast_node_destroy(struct AstNode *);
 
+bool ast_node_check_errors(struct AstNode *);
 void ast_node_unset_visited(struct AstNode *);
 void ast_node_add_child(struct AstNode *, struct AstNode *);
 void ast_node_add_sibling(struct AstNode *, struct AstNode *);

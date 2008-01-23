@@ -157,6 +157,7 @@ typecheck_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
     struct AstNode *node2 = node1->sibling;
 
     if (node1->kind != IDENTIFIER) {
+        node->type = ERROR;
         fprintf(stderr,
                 "Error: Left side of assignment must be an Identifier. Check line %d.\n",
                 node->linenum);
@@ -281,6 +282,7 @@ typecheck_visit_call (struct _Visitor *visitor, struct AstNode *node)
     procfunc_symbol = sym;
 
     if (sym == NULL) {
+        node->type = ERROR;
         fprintf(stderr,
                 "Error: Undeclared function or procedure '%s' in line %d\n",
                 name, node->linenum);
@@ -300,6 +302,7 @@ typecheck_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
     i = 0;
     for (temp = node->children; temp != NULL; temp = temp->sibling) {
         if (temp->type != procfunc_symbol->param_types[i]) {
+            temp->type = ERROR;
             fprintf(stderr, "Error: Call '%s' on line %d, expecting %s "
                     "on parameter %d (",
                     procfunc_symbol->name, node->linenum,
@@ -318,6 +321,7 @@ typecheck_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
             break;
     }
     if (i != procfunc_symbol->params) {
+        node->type = ERROR;
         fprintf(stderr, "Error: Expecting %d parameters, received %d.\n",
                 i, procfunc_symbol->params);
     }
@@ -333,6 +337,9 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
     if (is_vardecl) {
         node->type = declared_type;
         node->symbol->type = declared_type;
+        node->symbol->is_procfunc = FALSE;
+        node->symbol->is_global = (symtab == global_symtab);
+
         sym = symbol_insert(symtab, node->symbol);
 
         if (node->parent->kind == PARAMETER) {
@@ -340,20 +347,27 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
             procfunc_symbol->params++;
         }
 
-        if (sym != node->symbol)
+        if (sym != node->symbol) {
+            node->type = ERROR;
             fprintf(stderr, "Error: Symbol '%s' already defined in line XX\n",
                     sym->name);
+        }
 
     } else if (node->parent->kind == FUNCTION ||
                node->parent->kind == PROCEDURE) {
+
+        node->symbol->is_procfunc = TRUE;
+        node->symbol->is_global = TRUE;
         sym = symbol_insert(global_symtab, node->symbol);
         node->type = node->symbol->type;
         node->parent->type = node->type;
         procfunc_symbol = node->symbol;
 
-        if (sym != node->symbol)
+        if (sym != node->symbol) {
+            node->type = ERROR;
             fprintf(stderr, "Error: Symbol '%s' already defined in line XX\n",
                     sym->name);
+        }
 
     } else {
         sym = _symbol_lookup(node->symbol);
@@ -362,6 +376,7 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
             node->symbol = sym;
         else {
             node->symbol->decl_linenum = 0;
+            node->type = ERROR;
             fprintf(stderr, "Error: Undeclared symbol '%s' in line %d\n",
                     node->symbol->name, node->linenum);
         }
@@ -370,6 +385,7 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
             /*int i;
             //procfunc_symbol->param_types[procfunc_symbol->params] = node->symbol->type;
             //procfunc_symbol->params++;
+            node->type = ERROR;
             fprintf(stderr, "Parameter: %s (%x)\n",
                     procfunc_symbol->name, procfunc_symbol);
             fprintf(stderr, "types (%d): ", procfunc_symbol->params);

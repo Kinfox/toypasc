@@ -32,14 +32,14 @@ type_get_lexeme(Type type)
 }
 
 void
-value_print(Value *value, Type type)
+value_print(FILE *file, Value *value, Type type)
 {
     if (type == INTEGER) {
-        printf("%d", value->integer);
+        fprintf(file, "%d", value->integer);
     } else if (type == BOOLEAN) {
-        printf("%s", value->boolean ? "true" : "false");
+        fprintf(file, "%s", value->boolean ? "true" : "false");
     } else if (type == CHAR) {
-        printf("'%c'", value->character);
+        fprintf(file, "'%c'", value->character);
     }
 }
 

@@ -63,7 +63,7 @@ void value_set_from_int(Value *value, int val);
 void value_set_from_bool(Value *value, bool val);
 void value_set_from_char(Value *value, char val);
 
-void value_print(Value *value, Type type);
+void value_print(FILE *file, Value *value, Type type);
 
 #endif // BASE_H
 

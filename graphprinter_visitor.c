@@ -218,7 +218,7 @@ graphprinter_visit_literal (struct _Visitor *visitor, struct AstNode *node)
 {
     printf("\tnode_%x -> literal_%x;\n", node->parent, node);
     printf("\tliteral_%x [label=\"", node);
-    value_print(&node->value, node->type);
+    value_print(stdout, &node->value, node->type);
     printf("\",style=filled,color=\"#FFFFCC\"];\n");
     ast_node_accept_children(node->children, visitor);
 }
@@ -274,7 +274,7 @@ _print_graph(struct AstNode *self)
                    self, self->symbol);
         } else if (strstr(self->name, "Literal")) {
             printf("\tliteral_%x [label=\"", self);
-            value_print(&self->value, self->type);
+            value_print(stdout, &self->value, self->type);
             printf("\",style=filled,color=\"#FFFFCC\"];\n");
             printf("\tnode_%x -> literal_%x;\n", self, self);
         }

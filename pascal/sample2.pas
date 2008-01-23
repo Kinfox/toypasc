@@ -4,16 +4,18 @@ var b: boolean;
 var c: char;
 var i, j: Integer;
 
-{Procedure myproc ();
+Procedure myproc ();
 var mp : boolean;
 Begin
   b := false;
   mp := not b;
+  {
   printint(i);
   printchar(c);
+  }
   printbool(mp);
   println()
-End;}
+End;
 
 function myfunc (a : integer, b : integer) : integer;
 var mf1, mf2 : boolean;
@@ -29,6 +31,7 @@ Begin
     j := 0;
     b := not false or (13 <> j);
 
+    {
     while j <= 10 do
     begin
         printint(i);
@@ -44,6 +47,11 @@ Begin
 
     for i := 2 * 3 to 10 + 1 do
         printint(i);
+    }
+
+    myproc();
+    j := myfunc(false, i);
+    printint(j);
 
     i := 70 + 80 * 5 + 3;
     i := 1 * 2 + 3 * 4

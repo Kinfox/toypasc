@@ -22,8 +22,8 @@ c_codegen_new()
     visitor->visit_vardecl = &c_codegen_visit_vardecl;
     visitor->visit_identifier_list = &c_codegen_visit_identifier_list;
     visitor->visit_procfunc_list = &c_codegen_visit_procfunc_list;
-    visitor->visit_procedure = &c_codegen_visit_procedure;
-    visitor->visit_function = &c_codegen_visit_function;
+    visitor->visit_procedure = &c_codegen_visit_procfunc;
+    visitor->visit_function = &c_codegen_visit_procfunc;
     visitor->visit_param_list = &c_codegen_visit_param_list;
     visitor->visit_parameter = &c_codegen_visit_parameter;
     visitor->visit_statement_list = &c_codegen_visit_statement_list;
@@ -77,8 +77,8 @@ c_codegen_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
     printf("/* program ");
     ast_node_accept(node->children, visitor);
     printf("; */\n\n");
-    printf("#include <stdio.h>\n");
-    printf("#ifndef FALSE\n#define FALSE\t0\n#endif\n");
+    printf("#include <stdio.h>\n\n");
+    printf("#ifndef FALSE\n#define FALSE\t0\n#endif\n\n");
     printf("#ifndef TRUE\n#define TRUE\t1\n#endif\n");
 }
 
@@ -108,18 +108,7 @@ c_codegen_visit_procfunc_list (struct _Visitor *visitor, struct AstNode *node)
 }
 
 void
-c_codegen_visit_procedure (struct _Visitor *visitor, struct AstNode *node)
-{
-    printf("void\n%s ()\n{\n", node->children->symbol->name);
-    printf(TAB"/* declaracoes */\n\n");
-
-    ast_node_accept(node->children, visitor);
-
-    printf("}\n\n");
-}
-
-void
-c_codegen_visit_function (struct _Visitor *visitor, struct AstNode *node)
+c_codegen_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
 {
     const char *type;
     struct AstNode *child;
@@ -142,7 +131,8 @@ c_codegen_visit_function (struct _Visitor *visitor, struct AstNode *node)
 
     printf(")\n{\n");
 
-    printf(TAB"%s %s;\n", type, pf_name);
+    if (node->kind == FUNCTION)
+        printf(TAB"%s %s;\n", type, pf_name);
 
     if (child->kind == VARDECL_LIST) {
         ast_node_accept(child, visitor);
@@ -153,7 +143,10 @@ c_codegen_visit_function (struct _Visitor *visitor, struct AstNode *node)
 
     ast_node_accept(child, visitor);
 
-    printf("\n"TAB"return %s;\n}\n\n", pf_name);
+    if (node->kind == FUNCTION)
+        printf("\n"TAB"return %s;\n", pf_name);
+    printf("}\n\n");
+
     free(pf_name);
 }
 
@@ -206,7 +199,7 @@ c_codegen_visit_literal (struct _Visitor *visitor, struct AstNode *node)
     if (node->type == BOOLEAN) {
         printf("%s", node->value.boolean ? "TRUE" : "FALSE");
     } else
-        value_print(&node->value, node->type);
+        value_print(stdout, &node->value, node->type);
 }
 
 void
@@ -334,6 +327,7 @@ c_codegen_visit_for_stmt (struct _Visitor *visitor, struct AstNode *node)
     child = child->sibling; // Statements
     ast_node_accept_children(child, visitor);
 
+    printf("\n");
     _tab(node);
     printf("}\n");
 }
@@ -386,8 +380,9 @@ static char
             break;
         case CHAR:
             return "char";
+        default:
+            return "void";
     }
-    return "void";
 }
 
 static char

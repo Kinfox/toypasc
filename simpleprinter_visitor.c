@@ -56,7 +56,7 @@ simpleprinter_visit(struct _Visitor *visitor, struct AstNode *node)
     printf("kind: %d\n", node->kind);
     printf("type: %d\n", node->type);
     printf("value: ");
-    value_print(&node->value, node->type);
+    value_print(stdout, &node->value, node->type);
     printf("\nlinenum: %d\n", node->linenum);
     if (node->symbol != NULL)
         printf("symbol: %x (\"%s\")\n", node->symbol, node->symbol->name);

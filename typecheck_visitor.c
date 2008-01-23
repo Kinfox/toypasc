@@ -300,9 +300,16 @@ typecheck_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
     i = 0;
     for (temp = node->children; temp != NULL; temp = temp->sibling) {
         if (temp->type != procfunc_symbol->param_types[i]) {
-            fprintf(stderr, "Error: Call '%s' on line %d, expecting %s, received %s.\n",
+            fprintf(stderr, "Error: Call '%s' on line %d, expecting %s "
+                    "on parameter %d (",
                     procfunc_symbol->name, node->linenum,
-                    type_get_lexeme(procfunc_symbol->param_types[i]),
+                    type_get_lexeme(procfunc_symbol->param_types[i]), i+1);
+            if (temp->symbol != NULL)
+                fprintf(stderr, "'%s'", temp->symbol->name);
+            else
+                value_print(stderr, &temp->value, temp->type);
+
+            fprintf(stderr, "), received %s.\n",
                     type_get_lexeme(temp->type));
         }
 
@@ -360,7 +367,7 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
         }
 
         if (node->parent->kind == CALLPARAM_LIST) {
-            int i;
+            /*int i;
             //procfunc_symbol->param_types[procfunc_symbol->params] = node->symbol->type;
             //procfunc_symbol->params++;
             fprintf(stderr, "Parameter: %s (%x)\n",
@@ -370,7 +377,7 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
                 fprintf(stderr, "%d ",
                         procfunc_symbol->param_types[procfunc_symbol->params]);
             }
-            fprintf(stderr, "\n");
+            fprintf(stderr, "\n");*/
         }
     }
 

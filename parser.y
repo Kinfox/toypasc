@@ -17,10 +17,9 @@ bool simple_flag = FALSE;
 bool graph_flag = FALSE;
 bool c_flag = FALSE;
 bool llvm_flag = FALSE;
-char *output = NULL;
+//char *output = NULL;
 
 int opts;
-opterr = 0;
 
 /*extern char *yytext;*/
 extern FILE *yyin;
@@ -739,7 +738,9 @@ main (int argc, char **argv)
 {
     Visitor *visitor;
 
-    while ((opts = getopt (argc, argv, "sgclo:")) != -1) {
+    opterr = 0;
+
+    while ((opts = getopt (argc, argv, "sgcl")) != -1) {
         switch (opts) {
             case 's':
                 simple_flag = TRUE;
@@ -753,7 +754,7 @@ main (int argc, char **argv)
             case 'l':
                 llvm_flag = TRUE;
                 break;
-            case 'o':
+            /*case 'o':
                 output = optarg;
                 break;
             case '?':
@@ -765,6 +766,7 @@ main (int argc, char **argv)
                 else
                     fprintf (stderr,
                              "Unknown option character `\\x%x'.\n", optopt);
+            */
             default:
                 return 1;
         }
@@ -774,9 +776,6 @@ main (int argc, char **argv)
         yyin = fopen(argv[optind], "r");
     else
         yyin = stdin;
-
-    if (output != NULL)
-        stdout = fopen("/tmp/test", "w");
 
     /*yylloc.first_line = yylloc.last_line = 1;
     yylloc.first_column = yylloc.last_column = 0;*/

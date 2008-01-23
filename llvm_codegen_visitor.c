@@ -3,9 +3,13 @@
 #include <string.h>
 #include "llvm_codegen_visitor.h"
 
-static bool is_symboldecl = FALSE;
-static void _print_symbol_table(struct AstNode *node);
-static void _print_symbols(Symbol *symbol);
+static char *pf_name;
+static int tmp_var = 0;
+
+static void _tab(struct AstNode *node);
+static char *_get_type_string(Type type);
+static char *_create_temporary();
+static void _print_op_symbol(struct AstNode *node);
 
 Visitor *
 llvm_codegen_new()
@@ -15,298 +19,416 @@ llvm_codegen_new()
     visitor->visit_program = &llvm_codegen_visit_program;
     visitor->visit_programdecl = &llvm_codegen_visit_programdecl;
     visitor->visit_vardecl_list = &llvm_codegen_visit_vardecl_list;
-    visitor->visit_vardecl = &llvm_codegen_visit_simplenode;
+    visitor->visit_vardecl = &llvm_codegen_visit_vardecl;
     visitor->visit_identifier_list = &llvm_codegen_visit_identifier_list;
     visitor->visit_procfunc_list = &llvm_codegen_visit_procfunc_list;
     visitor->visit_procedure = &llvm_codegen_visit_procfunc;
     visitor->visit_function = &llvm_codegen_visit_procfunc;
     visitor->visit_param_list = &llvm_codegen_visit_param_list;
-    visitor->visit_parameter = &llvm_codegen_visit_simplenode;
+    visitor->visit_parameter = &llvm_codegen_visit_parameter;
     visitor->visit_statement_list = &llvm_codegen_visit_statement_list;
-    visitor->visit_printint_stmt = &llvm_codegen_visit_simplenode;
-    visitor->visit_printchar_stmt = &llvm_codegen_visit_simplenode;
-    visitor->visit_printbool_stmt = &llvm_codegen_visit_simplenode;
-    visitor->visit_printline_stmt = &llvm_codegen_visit_simplenode;
-    visitor->visit_assignment_stmt = &llvm_codegen_visit_simplenode;
-    visitor->visit_if_stmt = &llvm_codegen_visit_simplenode;
-    visitor->visit_while_stmt = &llvm_codegen_visit_simplenode;
-    visitor->visit_for_stmt = &llvm_codegen_visit_simplenode;
+    visitor->visit_printint_stmt = &llvm_codegen_visit_printint_stmt;
+    visitor->visit_printchar_stmt = &llvm_codegen_visit_printchar_stmt;
+    visitor->visit_printbool_stmt = &llvm_codegen_visit_printbool_stmt;
+    visitor->visit_printline_stmt = &llvm_codegen_visit_printline_stmt;
+    visitor->visit_assignment_stmt = &llvm_codegen_visit_assignment_stmt;
+    visitor->visit_if_stmt = &llvm_codegen_visit_if_stmt;
+    visitor->visit_while_stmt = &llvm_codegen_visit_while_stmt;
+    visitor->visit_for_stmt = &llvm_codegen_visit_for_stmt;
     visitor->visit_rel_expr = &llvm_codegen_visit_binary_expr;
     visitor->visit_add_expr = &llvm_codegen_visit_binary_expr;
     visitor->visit_mul_expr = &llvm_codegen_visit_binary_expr;
-    visitor->visit_notfactor = &llvm_codegen_visit_simplenode;
-    visitor->visit_call = &llvm_codegen_visit_simplenode;
+    visitor->visit_notfactor = &llvm_codegen_visit_notfactor;
+    visitor->visit_call = &llvm_codegen_visit_call;
     visitor->visit_callparam_list = &llvm_codegen_visit_callparam_list;
     visitor->visit_identifier = &llvm_codegen_visit_identifier;
     visitor->visit_literal = &llvm_codegen_visit_literal;
-    visitor->visit_add_op = NULL;
-    visitor->visit_mul_op = NULL;
-    visitor->visit_rel_op = NULL;
-    visitor->visit_not_op = NULL;
+    visitor->visit_add_op = &llvm_codegen_visit_binary_op;
+    visitor->visit_mul_op = &llvm_codegen_visit_binary_op;
+    visitor->visit_rel_op = &llvm_codegen_visit_binary_op;
+    visitor->visit_not_op = &llvm_codegen_visit_not_op;
 
     return visitor;
 }
 
 void
-llvm_codegen_visit_program(struct AstNode *node)
+llvm_codegen_visit_program(struct _Visitor *visitor, struct AstNode *node)
 {
-    struct AstNode *temp;
+    struct AstNode *child;
 
-    printf("/* toypasc AST graph. */\n");
-    printf("digraph {\n");
-
-    printf("\tremincross=true;\n");
-    printf("\tordering=out;\n");
-    printf("\tcompound=true;\n");
-    printf("\tranksep=1.0;\n");
-    printf("\tnode [fontsize=11,fontname=Courier];\n");
-    printf("\tedge [color=\"#22DDAA\"];\n\n");
-
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=orange,fillcolor=\"#FFEEEE\"];\n");
-
-    _print_symbol_table(node);
-}
-
-void
-llvm_codegen_visit_simplenode (struct AstNode *node)
-{
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
-           (node->type == ERROR) ? "FF0000" : "EEFFEE");
-}
-
-void
-llvm_codegen_visit_programdecl(struct AstNode *node)
-{
-    is_symboldecl = TRUE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-}
-
-void
-llvm_codegen_visit_vardecl_list (struct AstNode *node)
-{
-    is_symboldecl = TRUE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-    printf("subgraph cluster_%x {\n\tstyle=dotted;\n", node);
-}
-
-void
-llvm_codegen_visit_identifier_list (struct AstNode *node)
-{
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-    printf("subgraph cluster_%x {\n\tstyle=dotted;\n", node);
-}
-
-void
-llvm_codegen_visit_procfunc_list (struct AstNode *node)
-{
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-}
-
-void
-llvm_codegen_visit_procfunc (struct AstNode *node)
-{
-    is_symboldecl = TRUE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\\n'%s'\",style=",
-           node, node->name, node->children->symbol->name);
-    printf("filled,color=blue,fillcolor=\"#EEEEFF\"];\n");
-    printf("subgraph cluster_%x {\n\tstyle=dotted;\n", node);
-    _print_symbol_table(node);
-}
-
-void
-llvm_codegen_visit_param_list (struct AstNode *node)
-{
-    is_symboldecl = TRUE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-    printf("subgraph cluster_%x {\n\tstyle=dotted;\n", node);
-}
-
-void
-llvm_codegen_visit_statement_list (struct AstNode *node)
-{
-    is_symboldecl = FALSE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-    printf("subgraph cluster_%x {\n\tstyle=dotted;\n", node);
-}
-
-void
-llvm_codegen_visit_binary_expr (struct AstNode *node)
-{
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\\n(%s)\",style=",
-           node, node->name, node->children->sibling->name);
-    printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
-           (node->type == ERROR) ? "FF0000" : "EEFFEE");
-}
-
-void
-llvm_codegen_visit_callparam_list (struct AstNode *node)
-{
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-    printf("subgraph cluster_%x {\n\tstyle=dotted;\n", node);
-}
-
-void
-llvm_codegen_visit_identifier (struct AstNode *node)
-{
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#EEFFEE\"];\n");
-
-    if (node->symbol->decl_linenum == 0) {
-        printf("\tsymbol_%x [label=\"'%s'\\nundeclared\",",
-               node->symbol, node->symbol->name);
-        printf("color=red,fillcolor=\"#FFEEEE\",style=filled];\n");
+    printf("/* Generated with toypasc */\n");
+    for (child = node->children;
+         child != NULL && child->kind != STATEMENT_LIST;
+         child = child->sibling) {
+        ast_node_accept(child, visitor);
+        printf("\n");
     }
 
-    printf("\tnode_%x -> symbol_%x", node, node->symbol);
+    if (child != NULL) {
+        printf("int\nmain(int argc, char **argv)\n{\n");
+        ast_node_accept(child, visitor);
+        printf("\n"TAB"return 0;\n}\n\n");
+    }
+}
 
-    if (is_symboldecl)
-        printf(" [color=\"#00FF00\"]");
+void
+llvm_codegen_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
+{
+    printf("/* program ");
+    ast_node_accept(node->children, visitor);
+    printf("; */\n\n");
+    printf("#include <stdio.h>\n\n");
+    printf("#ifndef FALSE\n#define FALSE\t0\n#endif\n\n");
+    printf("#ifndef TRUE\n#define TRUE\t1\n#endif\n");
+}
 
+void
+llvm_codegen_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept_children(node->children, visitor);
+    printf("\n");
+}
+
+void
+llvm_codegen_visit_identifier_list (struct _Visitor *visitor, struct AstNode *node)
+{
+    struct AstNode *child;
+
+    for (child = node->children; child != NULL; child = child->sibling) {
+        ast_node_accept(child, visitor);
+        if (child->sibling != NULL)
+            printf(", ");
+    }
+}
+
+void
+llvm_codegen_visit_procfunc_list (struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept_children(node->children, visitor);
+}
+
+void
+llvm_codegen_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
+{
+    const char *type;
+    struct AstNode *child;
+
+    type = _get_type_string(node->type);
+    pf_name = _create_temporary();
+
+    printf("%s\n", type);
+
+    child = node->children; // Identifier
+    ast_node_accept(child, visitor);
+
+    printf(" (");
+
+    child = child->sibling;
+    if (child->kind == PARAM_LIST) {
+        ast_node_accept(child, visitor);
+        child = child->sibling;
+    }
+
+    printf(")\n{\n");
+
+    if (node->kind == FUNCTION)
+        printf(TAB"%s %s;\n", type, pf_name);
+
+    if (child->kind == VARDECL_LIST) {
+        ast_node_accept(child, visitor);
+        child = child->sibling;
+    }
+
+    printf("\n");
+
+    ast_node_accept(child, visitor);
+
+    if (node->kind == FUNCTION)
+        printf("\n"TAB"return %s;\n", pf_name);
+    printf("}\n\n");
+
+    free(pf_name);
+}
+
+void
+llvm_codegen_visit_param_list (struct _Visitor *visitor, struct AstNode *node)
+{
+    struct AstNode *child;
+
+    for (child = node->children; child != NULL; child = child->sibling) {
+        printf("%s ", _get_type_string(child->type));
+        ast_node_accept(child, visitor);
+        if (child->sibling != NULL)
+            printf(", ");
+    }
+}
+
+void
+llvm_codegen_visit_statement_list (struct _Visitor *visitor, struct AstNode *node)
+{
+    struct AstNode *child;
+
+    for (child = node->children; child != NULL; child = child->sibling) {
+        _tab(child);
+        ast_node_accept(child, visitor);
+        printf("\n");
+    }
+}
+
+void
+llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept_children(node->children, visitor);
+}
+
+void
+llvm_codegen_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept(node->children, visitor);
+}
+
+void
+llvm_codegen_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
+{
+    printf("%s", node->symbol->name);
+}
+
+void
+llvm_codegen_visit_literal (struct _Visitor *visitor, struct AstNode *node)
+{
+    if (node->type == BOOLEAN) {
+        printf("%s", node->value.boolean ? "TRUE" : "FALSE");
+    } else
+        value_print(stdout, &node->value, node->type);
+}
+
+void
+llvm_codegen_visit_vardecl (struct _Visitor *visitor, struct AstNode *node)
+{
+    const char *type = _get_type_string(node->type);
+
+    printf(TAB"%s ", type);
+    ast_node_accept(node->children, visitor);
     printf(";\n");
 }
 
 void
-llvm_codegen_visit_literal (struct AstNode *node)
+llvm_codegen_visit_parameter (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("\tnode_%x -> literal_%x;\n", node->parent, node);
-    printf("\tliteral_%x [label=\"", node);
-    value_print(&node->value, node->type);
-    printf("\",style=filled,color=\"#FFFFCC\"];\n");
+    ast_node_accept(node->children, visitor);
 }
 
 void
-llvm_codegen_close_group ()
+llvm_codegen_visit_printint_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
+    printf("printf(\"%%d\", ");
+    ast_node_accept(node->children, visitor);
+    printf(");");
+}
+
+void
+llvm_codegen_visit_printchar_stmt (struct _Visitor *visitor, struct AstNode *node)
+{
+    printf("printf(\"%%c\", ");
+    ast_node_accept(node->children, visitor);
+    printf(");");
+}
+
+void
+llvm_codegen_visit_printbool_stmt (struct _Visitor *visitor, struct AstNode *node)
+{
+    printf("printf(\"%%s\", ");
+    ast_node_accept(node->children, visitor);
+    printf(");");
+}
+
+void
+llvm_codegen_visit_printline_stmt (struct _Visitor *visitor, struct AstNode *node)
+{
+    printf("printf(\"\\n\");");
+    ast_node_accept(node->children, visitor);
+}
+
+void
+llvm_codegen_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept(node->children, visitor);
+    printf(" = ");
+    ast_node_accept(node->children->sibling, visitor);
+    printf(";");
+}
+
+void
+llvm_codegen_visit_if_stmt (struct _Visitor *visitor, struct AstNode *node)
+{
+    struct AstNode *child;
+    const char *var;
+
+    printf("if (");
+    child = node->children; // Expression
+    ast_node_accept(child, visitor);
+    printf(") {\n");
+
+    child = child->sibling; // If Statements
+    ast_node_accept(child, visitor);
+
+    printf("\n");
+    _tab(node);
+    printf("}");
+
+    child = child->sibling; // Else Statements
+
+    if (child != NULL) {
+        printf(" else {\n");
+        ast_node_accept(child, visitor);
+        printf("\n");
+        _tab(node);
+        printf("}");
+    }
+    printf("\n");
+}
+
+void
+llvm_codegen_visit_while_stmt (struct _Visitor *visitor, struct AstNode *node)
+{
+    struct AstNode *child;
+    const char *var;
+
+    printf("while (");
+    child = node->children; // Expression
+    ast_node_accept(child, visitor);
+    printf(") {\n");
+
+    child = child->sibling; // Statements
+    ast_node_accept(child, visitor);
+
+    _tab(node);
     printf("}\n");
 }
 
-static void
-_print_graph(struct AstNode *self)
+void
+llvm_codegen_visit_for_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    int i;
-    bool is_program;
-    bool is_cluster;
-    bool is_funcproc;
-    struct AstNode *temp;
+    struct AstNode *child;
+    const char *var;
 
-    if (self == NULL)
-        return;
+    printf("for (");
+    child = node->children; // Assignment
+    ast_node_accept(child, visitor);
 
-    is_program = self->kind == PROGRAM;
-    is_funcproc = self->kind == PROCEDURE || self->kind == FUNCTION;
-    is_cluster = is_program || is_funcproc ||
-                 self->kind == PROGDECL ||
-                 strstr(self->name, "List");
+    var = child->children->symbol->name;
+    printf(" %s < ", var);
 
-    printf("\tnode_%x [label=\"%s\",style=", self, self->name);
+    child = child->sibling; // Stop condition
+    ast_node_accept(child, visitor);
 
-    if (is_cluster) {
-        if (is_program)
-            printf("filled,color=orange,fillcolor=\"#FFEEEE\"];\n");
-        else if (is_funcproc)
-            printf("filled,color=blue,fillcolor=\"#EEEEFF\"];\n");
-        else
-            printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-        printf("subgraph cluster_%x {\n\tstyle=dotted;\n", self, self->name);
-    } else
-        printf("filled,color=\"#EEFFEE\"];\n");
+    printf("; %s++) {\n", var);
 
-    if (is_funcproc) {
-        printf("\tsubgraph cluster_symtab_0x%x {\tstyle=filled;\n", self->symbol);
-        printf("\tcolor=\"#EFEFEF\";\n\tfontname=Courier;\n");
-        printf("\tnode [style=filled,color=white,fillcolor=\"#CCFF99\"];\n");
-        //_ast_node_print_graph_symbol_table(self->symbol);
-        printf("\t}\n");
-    }
+    child = child->sibling; // Statements
+    ast_node_accept_children(child, visitor);
 
-    if (self->children != NULL) {
-        temp = self->children;
-        while (temp != NULL) {
-            printf("\tnode_%x -> node_%x;\n", self, temp);
-            temp = temp->sibling;
-        }
-    } else {
-        if (self->symbol != NULL) {
-            printf("\tnode_%x -> symbol_%x [color=lightgray,headport=n];\n",
-                   self, self->symbol);
-        } else if (strstr(self->name, "Literal")) {
-            printf("\tliteral_%x [label=\"", self);
-            value_print(&self->value, self->type);
-            printf("\",style=filled,color=\"#FFFFCC\"];\n");
-            printf("\tnode_%x -> literal_%x;\n", self, self);
-        }
+    printf("\n");
+    _tab(node);
+    printf("}\n");
+}
 
-    }
+void
+llvm_codegen_visit_notfactor (struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept_children(node->children, visitor);
+}
 
-    _print_graph(self->children);
+void
+llvm_codegen_visit_call (struct _Visitor *visitor, struct AstNode *node)
+{
+    printf("%s ();\n", node->symbol->name);
+    ast_node_accept(node->children, visitor);
+}
 
-    if (is_cluster)
-        printf("}\n");
+void
+llvm_codegen_visit_simplenode (struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept_children(node->children, visitor);
+}
 
-    _print_graph(self->sibling);
+void
+llvm_codegen_visit_binary_op (struct _Visitor *visitor, struct AstNode *node)
+{
+    _print_op_symbol(node);
+}
+
+void
+llvm_codegen_visit_not_op (struct _Visitor *visitor, struct AstNode *node)
+{
+    printf(" !", node->name);
 }
 
 static void
-_print_symbol_table(struct AstNode *node)
+_tab(struct AstNode *node) {
+    struct AstNode *parent;
+    for (parent = node->parent; parent->parent != NULL; parent = parent->parent)
+        printf(TAB);
+}
+
+static char
+*_get_type_string(Type type)
 {
-    if (node->symbol->next == NULL)
-        return;
+    switch (type) {
+        case INTEGER:
+        case BOOLEAN:
+            return "int";
+            break;
+        case CHAR:
+            return "char";
+        default:
+            return "void";
+    }
+}
 
-    printf("\tnode_%x -> symbol_%x [lhead=cluster_symtab_%x,color=",
-           node, node->symbol->next, node);
-    if (node->parent == NULL)
-        printf("orange];\n");
-    else
-        printf("blue];\n");
+static char
+*_create_temporary()
+{
+    char *temp;
 
-    printf("\tsubgraph cluster_symtab_%x {\n\tstyle=filled;\n", node);
+    if (asprintf (&temp, "tmp%.5d", tmp_var) < 0)
+        return NULL;
 
-    if (node->parent == NULL)
-        printf("\tcolor=orange;\n");
-    else
-        printf("\tcolor=blue;\n");
-
-    printf("\tstyle=filled;\n\tfillcolor=\"#EFEFEF\";\n\tfontname=Courier;\n");
-    printf("\tnode [style=filled,color=white,fillcolor=\"#CCFF99\"];\n");
-
-    _print_symbols(node->symbol->next);
-
-    printf("\t}\n");
+    tmp_var++;
+    return temp;
 }
 
 static void
-_print_symbols(Symbol *symbol)
+_print_op_symbol(struct AstNode *node)
 {
-    if (symbol == NULL)
-        return;
-
-    if (symbol->name != NULL) {
-        printf("\t\tsymbol_%x [shape=record,label=\"{", symbol);
-        printf("Symbol|Address: 0x%x\\l|lexeme: %s\\l|", symbol, symbol->name);
-        printf("type: %s\\l}\"", type_get_lexeme(symbol->type));
-        printf(",style=filled,color=white,fillcolor=\"#CCFF99\"];\n");
+    switch (node->kind) {
+        case T_OR:
+            printf(" || ");
+            break;
+        case T_AND:
+            printf(" && ");
+            break;
+        case T_EQUAL:
+            printf(" == ");
+            break;
+        case T_NOTEQUAL:
+            printf(" != ");
+            break;
+        case T_LESSER:
+            printf(" < ");
+            break;
+        case T_GREATER:
+            printf(" > ");
+            break;
+        case T_LESSEREQUAL:
+            printf(" <= ");
+            break;
+        case T_GREATEREQUAL:
+            printf(" >= ");
+            break;
+        case T_PLUS:
+        case T_MINUS:
+        case T_STAR:
+        case T_SLASH:
+            printf(" %s ", node->name);
     }
-
-    _print_symbols(symbol->next);
 }
-

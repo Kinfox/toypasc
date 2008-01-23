@@ -97,7 +97,7 @@ symbol_print(Symbol *symbol)
     printf("name: %s\n", symbol->name);
     printf("type: %d\n", symbol->type);
     printf("value:");
-    value_print(&symbol->value, symbol->type);
+    value_print(stdout, &symbol->value, symbol->type);
     printf("\ndeclaration line: %d\n", symbol->decl_linenum);
     printf("next: %x\n\n", symbol->next);
 }

@@ -7,7 +7,7 @@ static char *pf_name;
 static int tmp_var = 0;
 
 static void _tab(struct AstNode *node);
-static char *_get_type_string(Type type);
+static int _get_type_size(Type type);
 static char *_create_temporary();
 static void _print_op_symbol(struct AstNode *node);
 
@@ -56,30 +56,36 @@ llvm_codegen_visit_program(struct _Visitor *visitor, struct AstNode *node)
 {
     struct AstNode *child;
 
-    printf("/* Generated with toypasc */\n");
+    printf("; Generated with toypasc\n");
     for (child = node->children;
          child != NULL && child->kind != STATEMENT_LIST;
          child = child->sibling) {
         ast_node_accept(child, visitor);
-        printf("\n");
     }
 
     if (child != NULL) {
-        printf("int\nmain(int argc, char **argv)\n{\n");
+        printf("; Definition of main function\n");
+        printf("define i32 @main()\n{\n");
         ast_node_accept(child, visitor);
-        printf("\n"TAB"return 0;\n}\n\n");
+        printf(TAB"ret i32 0\n}\n\n");
     }
 }
 
 void
 llvm_codegen_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("/* program ");
+    printf("; program ");
     ast_node_accept(node->children, visitor);
-    printf("; */\n\n");
-    printf("#include <stdio.h>\n\n");
-    printf("#ifndef FALSE\n#define FALSE\t0\n#endif\n\n");
-    printf("#ifndef TRUE\n#define TRUE\t1\n#endif\n");
+    printf("\n\n");
+    printf("; Declare the string constants as a global constants...\n");
+    printf("@.true_str = internal constant [5 x i8] c\"true\\00\"\n");
+    printf("@.false_str = internal constant [6 x i8] c\"false\\00\"\n");
+    printf("@.int_fmt = internal constant [3 x i8] c\"%%d\\00\"\n");
+
+    printf("\n; External declaration of functions\n");
+    printf("declare i32 @puts(i8 *)\n");
+    printf("declare i32 @putchar(i32)\n");
+    printf("declare i32 @printf(i8*, ...)\n\n");
 }
 
 void
@@ -113,7 +119,7 @@ llvm_codegen_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
     const char *type;
     struct AstNode *child;
 
-    type = _get_type_string(node->type);
+    //type = _get_type_string(node->type);
     pf_name = _create_temporary();
 
     printf("%s\n", type);
@@ -156,7 +162,7 @@ llvm_codegen_visit_param_list (struct _Visitor *visitor, struct AstNode *node)
     struct AstNode *child;
 
     for (child = node->children; child != NULL; child = child->sibling) {
-        printf("%s ", _get_type_string(child->type));
+        //printf("%s ", _get_type_string(child->type));
         ast_node_accept(child, visitor);
         if (child->sibling != NULL)
             printf(", ");
@@ -178,6 +184,8 @@ llvm_codegen_visit_statement_list (struct _Visitor *visitor, struct AstNode *nod
 void
 llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 {
+    // %tmp = mul i32 %x, %y
+    // %tmp2 = add i32 %tmp, %z
     ast_node_accept_children(node->children, visitor);
 }
 
@@ -190,26 +198,38 @@ llvm_codegen_visit_callparam_list (struct _Visitor *visitor, struct AstNode *nod
 void
 llvm_codegen_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("%s", node->symbol->name);
+    // FIXME: verificar se eh global(@) ou local(%)
+    printf("@%s", node->symbol->name);
 }
 
 void
 llvm_codegen_visit_literal (struct _Visitor *visitor, struct AstNode *node)
 {
     if (node->type == BOOLEAN) {
-        printf("%s", node->value.boolean ? "TRUE" : "FALSE");
+        printf("%bool_str = getelementptr [");
+        if (node->value.boolean)
+            printf("5 x i8]* @.true");
+        else
+            printf("6 x i8]* @.false");
+        printf("_str, i32 0, i32 0\n");
+
     } else
-        value_print(stdout, &node->value, node->type);
+        printf("%d", node->value.integer);
 }
 
 void
 llvm_codegen_visit_vardecl (struct _Visitor *visitor, struct AstNode *node)
 {
-    const char *type = _get_type_string(node->type);
+    struct AstNode *child;
+    const char *type;// = _get_type_string(node->type);
 
-    printf(TAB"%s ", type);
-    ast_node_accept(node->children, visitor);
-    printf(";\n");
+    child = node->children;
+    child->visited = TRUE;
+
+    for (child = child->children; child != NULL; child = child->sibling) {
+        ast_node_accept(child, visitor);
+        printf(" = global i%d 0\n", _get_type_size(child->type));
+    }
 }
 
 void
@@ -221,41 +241,45 @@ llvm_codegen_visit_parameter (struct _Visitor *visitor, struct AstNode *node)
 void
 llvm_codegen_visit_printint_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("printf(\"%%d\", ");
+    printf("call i32 (i8* noalias , ...)* bitcast (i32 (i8*, ...)* ");
+    printf("@printf to i32 (i8* noalias , ...)*)( i8* getelementptr ");
+    printf("([3 x i8]* @.int_fmt, i32 0, i32 0) noalias , i32 ");
     ast_node_accept(node->children, visitor);
-    printf(");");
+    printf(" )\n");
 }
 
 void
 llvm_codegen_visit_printchar_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("printf(\"%%c\", ");
+    printf("call i32 @putchar( i32 ");
     ast_node_accept(node->children, visitor);
-    printf(");");
+    printf(" )\n");
 }
 
 void
 llvm_codegen_visit_printbool_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("printf(\"%%s\", ");
     ast_node_accept(node->children, visitor);
-    printf(");");
+    printf(TAB"call i32 @puts( i8 * %bool_str )\n");
 }
 
 void
 llvm_codegen_visit_printline_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("printf(\"\\n\");");
-    ast_node_accept(node->children, visitor);
+    printf("call i32 @putchar( i32 10 )\n");
 }
 
 void
 llvm_codegen_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    ast_node_accept(node->children, visitor);
-    printf(" = ");
+    int tsize = _get_type_size(node->children->type);
+    printf("; [Template] store i32 50, i32* @x, align 4\n");
+
+    printf(TAB"store i%d ", tsize);
     ast_node_accept(node->children->sibling, visitor);
-    printf(";");
+    printf(", i%d* ", tsize);
+    ast_node_accept(node->children, visitor);
+    printf("\n");
 }
 
 void
@@ -370,18 +394,18 @@ _tab(struct AstNode *node) {
         printf(TAB);
 }
 
-static char
-*_get_type_string(Type type)
+static int
+_get_type_size(Type type)
 {
     switch (type) {
         case INTEGER:
+            return 32;
         case BOOLEAN:
-            return "int";
-            break;
+            return 1;
         case CHAR:
-            return "char";
+            return 8;
         default:
-            return "void";
+            return 0;
     }
 }
 
@@ -390,7 +414,7 @@ static char
 {
     char *temp;
 
-    if (asprintf (&temp, "tmp%.5d", tmp_var) < 0)
+    if (asprintf (&temp, "tmp%d", tmp_var) < 0)
         return NULL;
 
     tmp_var++;

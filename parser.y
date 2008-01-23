@@ -12,6 +12,7 @@
 #include "simpleprinter_visitor.h"
 #include "graphprinter_visitor.h"
 #include "c_codegen_visitor.h"
+#include "llvm_codegen_visitor.h"
 
 bool simple_flag = FALSE;
 bool graph_flag = FALSE;
@@ -787,24 +788,27 @@ main (int argc, char **argv)
     ast_node_accept(ast, visitor);
 
     /* Mostra estrutura da AST em forma de texto. */
-    if (simple_flag) {
+    if (simple_flag)
         visitor = simpleprinter_new();
-        ast_node_accept(ast, visitor);
-    }
 
     /* Desenha grafo da AST. */
-    if (graph_flag) {
+    else if (graph_flag)
         visitor = graphprinter_new();
-        ast_node_accept(ast, visitor);
-    }
 
     /* Gera codigo em linguagem C. */
-    if (c_flag) {
+    else if (c_flag)
         visitor = c_codegen_new();
-        ast_node_accept(ast, visitor);
-    }
 
-    fclose(stdout);
+    /* Gera codigo em assembly LLVM. */
+    else if (llvm_flag)
+        visitor = llvm_codegen_new();
+
+    else
+        visitor = NULL;
+
+    if (visitor != NULL)
+        ast_node_accept(ast, visitor);
+
     return 0;
 }
 

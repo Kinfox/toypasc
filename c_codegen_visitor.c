@@ -246,7 +246,6 @@ void
 c_codegen_visit_printline_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
     printf("printf(\"\\n\");");
-    ast_node_accept(node->children, visitor);
 }
 
 void

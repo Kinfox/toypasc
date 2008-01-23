@@ -1,7 +1,10 @@
 #ifndef BASE_H
 #define BASE_H
 
-#define VOID(var)   ((void *) &var)
+#define VOID(var)       ((void *) &var)
+#define IS_LITERAL(k)   (k == BOOL_LITERAL || \
+                         k == CHAR_LITERAL || \
+                         k == INT_LITERAL)
 
 typedef enum {
     FALSE = 0,

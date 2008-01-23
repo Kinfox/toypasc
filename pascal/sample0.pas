@@ -1,15 +1,21 @@
 program sample0;
 
 Var x : Integer;
-var a, b: Boolean;
-var c: char;
+{var a, b: Boolean;
+var c: char;}
 
 Procedure myproc (i : integer);
+var ck : integer;
 Begin
+    {ck := i * 2 + 3;}
+    ck := 2 + 3;
+    x := 5 + 5;
+    printint(ck);
+    println();
     printint(i)
 End;
 
-FunCtion myfunc (i : integer) : integer;
+{FunCtion myfunc (i : integer) : integer;
 Begin
     myfunc := 539;
     println()
@@ -25,12 +31,12 @@ End;
 }
 
 Begin
-    {x := 2;}
+    {x := 2 + 3;}
     {x := 2 + 3 * 5 + 9;}
-    printint(137);
+    {printint(x);}
     println();
-    myproc(1);
-    x := myfunc(65);
+    myproc(7);
+    {x := myfunc(65);
     printint(x);
     {printbool(false);
     printchar('\n');

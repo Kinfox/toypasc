@@ -192,9 +192,26 @@ llvm_codegen_visit_statement_list (struct _Visitor *visitor, struct AstNode *nod
 void
 llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 {
+    struct AstNode *left = node->children;
+    struct AstNode *op = left->sibling;
+    struct AstNode *right = op->sibling;
+
+    fprintf(stderr, "[%s]\n", node->name);
+    fprintf(stderr, "left : %s\n", left->name);
+    fprintf(stderr, "op   : %s\n", op->name);
+    fprintf(stderr, "right: %s\n\n", right->name);
+
+    if (IS_LITERAL(left->kind) && IS_LITERAL(right->kind)) {
+        _print_op_symbol(op);
+        printf(" ");
+        ast_node_accept(left, visitor);
+        printf(", ");
+        ast_node_accept(right, visitor);
+    }
+
     // %tmp = mul i32 %x, %y
     // %tmp2 = add i32 %tmp, %z
-    ast_node_accept_children(node->children, visitor);
+    //ast_node_accept_children(node->children, visitor);
 }
 
 void
@@ -206,7 +223,7 @@ llvm_codegen_visit_callparam_list (struct _Visitor *visitor, struct AstNode *nod
 void
 llvm_codegen_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("%c%s", node->symbol->is_global ? '@' : '%',
+    printf("%s%s", node->symbol->is_global ? "@" : TAB"%",
                    node->symbol->name);
 }
 
@@ -236,7 +253,10 @@ llvm_codegen_visit_vardecl (struct _Visitor *visitor, struct AstNode *node)
 
     for (child = child->children; child != NULL; child = child->sibling) {
         ast_node_accept(child, visitor);
-        printf(" = global i%d 0\n", _get_type_size(child->type));
+        if (node->parent->parent->kind == PROGRAM)
+            printf(" = global i%d 0\n", _get_type_size(child->type));
+        else
+            printf(" = add i%d 0, 0\n", _get_type_size(child->type));
     }
 }
 
@@ -282,12 +302,18 @@ llvm_codegen_visit_printline_stmt (struct _Visitor *visitor, struct AstNode *nod
 void
 llvm_codegen_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
+    Symbol *lsym;
     int tsize = _get_type_size(node->children->type);
     printf("; [Template] store i32 50, i32* @x, align 4\n");
 
-    printf(TAB"store i%d ", tsize);
-    ast_node_accept(node->children->sibling, visitor);
-    printf(", i%d* ", tsize);
+    lsym = node->children->symbol;
+
+    fprintf(stderr, "%s - ", node->children->symbol->name);
+    fprintf(stderr, "is_global? %d\n", node->children->symbol->is_global);
+
+    //printf(TAB"store i%d ", tsize);
+    //ast_node_accept(node->children->sibling, visitor);
+    //printf(", i%d* ", tsize);
     ast_node_accept(node->children, visitor);
     printf("\n");
 }
@@ -449,7 +475,7 @@ static void
 _print_op_symbol(struct AstNode *node)
 {
     switch (node->kind) {
-        case T_OR:
+        /*case T_OR:
             printf(" || ");
             break;
         case T_AND:
@@ -472,11 +498,17 @@ _print_op_symbol(struct AstNode *node)
             break;
         case T_GREATEREQUAL:
             printf(" >= ");
-            break;
+            break;*/
         case T_PLUS:
+            printf("add");
+            break;
         case T_MINUS:
+            printf("sub");
+            break;
         case T_STAR:
-        case T_SLASH:
-            printf(" %s ", node->name);
+            printf("mul");
+            break;
+        /*case T_SLASH:
+            printf(" %s ", node->name);*/
     }
 }

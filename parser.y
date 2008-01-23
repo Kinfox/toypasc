@@ -1,6 +1,8 @@
 %{
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "base.h"
 #include "parser.h"
 #include "ast.h"
@@ -10,6 +12,15 @@
 #include "simpleprinter_visitor.h"
 #include "graphprinter_visitor.h"
 #include "c_codegen_visitor.h"
+
+bool simple_flag = FALSE;
+bool graph_flag = FALSE;
+bool c_flag = FALSE;
+bool llvm_flag = FALSE;
+char *output = NULL;
+
+int opts;
+opterr = 0;
 
 /*extern char *yytext;*/
 extern FILE *yyin;
@@ -728,10 +739,44 @@ main (int argc, char **argv)
 {
     Visitor *visitor;
 
-    if (argc > 1)
-        yyin = fopen(argv[1], "r");
+    while ((opts = getopt (argc, argv, "sgclo:")) != -1) {
+        switch (opts) {
+            case 's':
+                simple_flag = TRUE;
+                break;
+            case 'g':
+                graph_flag = TRUE;
+                break;
+            case 'c':
+                c_flag = TRUE;
+                break;
+            case 'l':
+                llvm_flag = TRUE;
+                break;
+            case 'o':
+                output = optarg;
+                break;
+            case '?':
+                if (optopt == 'o')
+                    fprintf (stderr, "Option -%c requires an argument.\n",
+                             optopt);
+                else if (isprint (optopt))
+                    fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+                else
+                    fprintf (stderr,
+                             "Unknown option character `\\x%x'.\n", optopt);
+            default:
+                return 1;
+        }
+    }
+
+    if (argc > optind)
+        yyin = fopen(argv[optind], "r");
     else
         yyin = stdin;
+
+    if (output != NULL)
+        stdout = fopen("/tmp/test", "w");
 
     /*yylloc.first_line = yylloc.last_line = 1;
     yylloc.first_column = yylloc.last_column = 0;*/
@@ -743,17 +788,24 @@ main (int argc, char **argv)
     ast_node_accept(ast, visitor);
 
     /* Mostra estrutura da AST em forma de texto. */
-    visitor = simpleprinter_new();
-    //ast_node_accept(ast, visitor);
+    if (simple_flag) {
+        visitor = simpleprinter_new();
+        ast_node_accept(ast, visitor);
+    }
 
     /* Desenha grafo da AST. */
-    visitor = graphprinter_new();
-    //ast_node_accept(ast, visitor);
+    if (graph_flag) {
+        visitor = graphprinter_new();
+        ast_node_accept(ast, visitor);
+    }
 
     /* Gera codigo em linguagem C. */
-    visitor = c_codegen_new();
-    ast_node_accept(ast, visitor);
+    if (c_flag) {
+        visitor = c_codegen_new();
+        ast_node_accept(ast, visitor);
+    }
 
+    fclose(stdout);
     return 0;
 }
 

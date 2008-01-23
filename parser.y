@@ -9,6 +9,7 @@
 #include "typecheck_visitor.h"
 #include "simpleprinter_visitor.h"
 #include "graphprinter_visitor.h"
+#include "c_codegen_visitor.h"
 
 /*extern char *yytext;*/
 extern FILE *yyin;
@@ -98,7 +99,7 @@ static struct AstNode *ast;
 %type <astnode> SingleParam
 %type <astnode> MultiParam
 
-%type <astnode> MainCodeBlock
+%type <astnode> ProgramBody
 %type <astnode> Statements
 %type <astnode> StatementList
 %type <astnode> MultiStatement
@@ -136,16 +137,16 @@ static struct AstNode *ast;
 
 %%
 Program:
-    ProgramDecl VarDeclList ProcFuncList MainCodeBlock
+    ProgramDecl VarDeclList ProcFuncList ProgramBody
     {
         struct AstNode *ast_node;
 
         ast_node = ast_node_new("Program", PROGRAM, VOID,
                                 yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $1);
-        ast_node_add_child(ast_node, $2);
-        ast_node_add_child(ast_node, $3);
-        ast_node_add_child(ast_node, $4);
+        ast_node_add_child(ast_node, $1); // ProgramDecl
+        ast_node_add_child(ast_node, $2); // VarDeclList
+        ast_node_add_child(ast_node, $3); // ProcFuncList
+        ast_node_add_child(ast_node, $4); // ProgramBody
         $$ = ast_node;
 
         ast = ast_node;
@@ -156,7 +157,7 @@ ProgramDecl:
     T_PROGRAM Identifier T_SEMICOLON
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("ProgramDecl", PROGDECL, VOID,
+        ast_node = ast_node_new("ProgramDecl", PROGRAM_DECL, VOID,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $2);
         $$ = ast_node;
@@ -324,7 +325,7 @@ SingleParam:
     }
     ;
 
-MainCodeBlock:
+ProgramBody:
     /* empty */ { $$ = NULL; }
     | T_BEGIN StatementList T_END T_DOT { $$ = $2; }
     ;
@@ -725,9 +726,7 @@ yyerror (/*YYLTYPE *locp,*/ const char *msg)
 int
 main (int argc, char **argv)
 {
-    Visitor *tpvisitor;
-    Visitor *gpvisitor;
-    Visitor *spvisitor;
+    Visitor *visitor;
 
     if (argc > 1)
         yyin = fopen(argv[1], "r");
@@ -739,13 +738,21 @@ main (int argc, char **argv)
 
     yyparse();
 
-    tpvisitor = typecheck_new();
-    gpvisitor = graphprinter_new();
-    spvisitor = simpleprinter_new();
+    /* Verificacao de tipos. */
+    visitor = typecheck_new();
+    ast_node_accept(ast, visitor);
 
-    ast_node_accept(ast, tpvisitor);
-    //ast_node_accept(ast, spvisitor);
-    ast_node_accept(ast, gpvisitor);
+    /* Mostra estrutura da AST em forma de texto. */
+    visitor = simpleprinter_new();
+    //ast_node_accept(ast, visitor);
+
+    /* Desenha grafo da AST. */
+    visitor = graphprinter_new();
+    //ast_node_accept(ast, visitor);
+
+    /* Gera codigo em linguagem C. */
+    visitor = c_codegen_new();
+    ast_node_accept(ast, visitor);
 
     return 0;
 }

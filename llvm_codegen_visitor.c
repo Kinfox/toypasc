@@ -39,7 +39,10 @@ llvm_codegen_new()
     visitor->visit_callparam_list = &llvm_codegen_visit_callparam_list;
     visitor->visit_identifier = &llvm_codegen_visit_identifier;
     visitor->visit_literal = &llvm_codegen_visit_literal;
-    visitor->close_group = &llvm_codegen_close_group;
+    visitor->visit_add_op = NULL;
+    visitor->visit_mul_op = NULL;
+    visitor->visit_rel_op = NULL;
+    visitor->visit_not_op = NULL;
 
     return visitor;
 }

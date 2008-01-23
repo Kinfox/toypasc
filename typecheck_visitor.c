@@ -10,97 +10,111 @@ static Type _get_expression_type(struct AstNode *node);
 Visitor *
 typecheck_new()
 {
-    Visitor *tc_visitor = (Visitor *) malloc (sizeof(Visitor));
+    Visitor *visitor = (Visitor *) malloc (sizeof(Visitor));
 
-    tc_visitor->visit_program = &typecheck_visit_program;
-    tc_visitor->visit_programdecl = &typecheck_visit_programdecl;
-    tc_visitor->visit_vardecl_list = &typecheck_visit_vardecl_list;
-    tc_visitor->visit_vardecl = &typecheck_visit_vardecl;
-    tc_visitor->visit_identifier_list = &typecheck_visit_donothing;
-    tc_visitor->visit_procfunc_list = &typecheck_visit_procfunc_list;
-    tc_visitor->visit_procedure = &typecheck_visit_procfunc;
-    tc_visitor->visit_function = &typecheck_visit_procfunc;
-    tc_visitor->visit_param_list = &typecheck_visit_donothing;
-    tc_visitor->visit_parameter = &typecheck_visit_parameter;
-    tc_visitor->visit_statement_list = &typecheck_visit_statement_list;
-    tc_visitor->visit_printint_stmt = &typecheck_visit_printint_stmt;
-    tc_visitor->visit_printchar_stmt = &typecheck_visit_printchar_stmt;
-    tc_visitor->visit_printbool_stmt = &typecheck_visit_printbool_stmt;
-    tc_visitor->visit_printline_stmt = &typecheck_visit_donothing;
-    tc_visitor->visit_assignment_stmt = &typecheck_visit_assignment_stmt;
-    tc_visitor->visit_if_stmt = &typecheck_visit_if_stmt;
-    tc_visitor->visit_while_stmt = &typecheck_visit_while_stmt;
-    tc_visitor->visit_for_stmt = &typecheck_visit_for_stmt;
-    tc_visitor->visit_rel_expr = &typecheck_visit_binary_expr;
-    tc_visitor->visit_add_expr = &typecheck_visit_binary_expr;
-    tc_visitor->visit_mul_expr = &typecheck_visit_binary_expr;
-    tc_visitor->visit_notfactor = &typecheck_visit_notfactor;
-    tc_visitor->visit_call = &typecheck_visit_call;
-    tc_visitor->visit_callparam_list = &typecheck_visit_callparam_list;
-    tc_visitor->visit_identifier = &typecheck_visit_identifier;
-    tc_visitor->visit_literal = &typecheck_visit_donothing;
-    tc_visitor->close_group = NULL;
+    visitor->visit_program = &typecheck_visit_program;
+    visitor->visit_programdecl = &typecheck_visit_programdecl;
+    visitor->visit_vardecl_list = &typecheck_visit_vardecl_list;
+    visitor->visit_vardecl = &typecheck_visit_vardecl;
+    visitor->visit_identifier_list = &typecheck_visit_pass;
+    visitor->visit_procfunc_list = &typecheck_visit_procfunc_list;
+    visitor->visit_procedure = &typecheck_visit_procfunc;
+    visitor->visit_function = &typecheck_visit_procfunc;
+    visitor->visit_param_list = &typecheck_visit_pass;
+    visitor->visit_parameter = &typecheck_visit_parameter;
+    visitor->visit_statement_list = &typecheck_visit_statement_list;
+    visitor->visit_printint_stmt = &typecheck_visit_printint_stmt;
+    visitor->visit_printchar_stmt = &typecheck_visit_printchar_stmt;
+    visitor->visit_printbool_stmt = &typecheck_visit_printbool_stmt;
+    visitor->visit_printline_stmt = &typecheck_visit_pass;
+    visitor->visit_assignment_stmt = &typecheck_visit_assignment_stmt;
+    visitor->visit_if_stmt = &typecheck_visit_if_stmt;
+    visitor->visit_while_stmt = &typecheck_visit_while_stmt;
+    visitor->visit_for_stmt = &typecheck_visit_for_stmt;
+    visitor->visit_rel_expr = &typecheck_visit_binary_expr;
+    visitor->visit_add_expr = &typecheck_visit_binary_expr;
+    visitor->visit_mul_expr = &typecheck_visit_binary_expr;
+    visitor->visit_notfactor = &typecheck_visit_notfactor;
+    visitor->visit_call = &typecheck_visit_call;
+    visitor->visit_callparam_list = &typecheck_visit_callparam_list;
+    visitor->visit_identifier = &typecheck_visit_identifier;
+    visitor->visit_literal = &typecheck_visit_pass;
+    visitor->visit_add_op = &typecheck_visit_pass;
+    visitor->visit_mul_op = &typecheck_visit_pass;
+    visitor->visit_rel_op = &typecheck_visit_pass;
+    visitor->visit_not_op = &typecheck_visit_pass;
+
+    return visitor;
 }
 
 void
-typecheck_visit_donothing(struct AstNode *node)
+typecheck_visit_pass(struct _Visitor *visitor, struct AstNode *node)
 {
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_program(struct AstNode *node)
+typecheck_visit_program(struct _Visitor *visitor, struct AstNode *node)
 {
     node->symbol = symbol_new(NULL);
     global_symtab = node->symbol;
     symtab = global_symtab;
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_programdecl(struct AstNode *node)
+typecheck_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
 {
     is_vardecl = TRUE;
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_procfunc_list(struct AstNode *node)
+typecheck_visit_procfunc_list(struct _Visitor *visitor, struct AstNode *node)
 {
     symtab = global_symtab;
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_procfunc(struct AstNode *node)
+typecheck_visit_procfunc(struct _Visitor *visitor, struct AstNode *node)
 {
     is_vardecl = FALSE;
     symtab = node->symbol;
     procfunc_symbol = node->children->symbol;
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_vardecl_list (struct AstNode *node)
+typecheck_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
 {
     is_vardecl = TRUE;
     symtab = node->parent->symbol;
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_vardecl (struct AstNode *node)
+typecheck_visit_vardecl (struct _Visitor *visitor, struct AstNode *node)
 {
     declared_type = node->type;
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_parameter (struct AstNode *node)
+typecheck_visit_parameter (struct _Visitor *visitor, struct AstNode *node)
 {
     is_vardecl = TRUE;
     declared_type = node->type;
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_statement_list(struct AstNode *node)
+typecheck_visit_statement_list(struct _Visitor *visitor, struct AstNode *node)
 {
     is_vardecl = FALSE;
     declared_type = VOID;
     symtab = node->parent->symbol;
+    ast_node_accept_children(node->children, visitor);
 }
 
 static void
@@ -116,25 +130,28 @@ _typecheck_print_stmt(struct AstNode *node, Type type, const char *type_str)
 }
 
 void
-typecheck_visit_printint_stmt (struct AstNode *node)
+typecheck_visit_printint_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
     _typecheck_print_stmt(node, INTEGER, "Int");
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_printchar_stmt (struct AstNode *node)
+typecheck_visit_printchar_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
     _typecheck_print_stmt(node, CHAR, "Char");
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_printbool_stmt (struct AstNode *node)
+typecheck_visit_printbool_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
     _typecheck_print_stmt(node, BOOLEAN, "Bool");
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_assignment_stmt (struct AstNode *node)
+typecheck_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
     struct AstNode *node1 = node->children;
     struct AstNode *node2 = node1->sibling;
@@ -143,19 +160,17 @@ typecheck_visit_assignment_stmt (struct AstNode *node)
         fprintf(stderr,
                 "Error: Left side of assignment must be an Identifier. Check line %d.\n",
                 node->linenum);
-        return;
-    }
-
-    if (_get_expression_type(node1) != _get_expression_type(node2)) {
+    } else if (_get_expression_type(node1) != _get_expression_type(node2)) {
         node->type = ERROR;
         fprintf(stderr,
                 "Error: Incompatible types on assignment operation in line %d.\n",
                 node->linenum);
     }
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_if_stmt (struct AstNode *node)
+typecheck_visit_if_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
     struct AstNode *expr = node->children;
 
@@ -165,10 +180,11 @@ typecheck_visit_if_stmt (struct AstNode *node)
                 "Error: Condition for if statement must be of Boolean type. "
                 "Check line %d.\n", node->linenum);
     }
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_while_stmt (struct AstNode *node)
+typecheck_visit_while_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
     Type type;
     struct AstNode *expr = node->children;
@@ -180,10 +196,11 @@ typecheck_visit_while_stmt (struct AstNode *node)
                 "Error: Expression in While statement must be of "
                 "Boolean type. Check line %d.\n", expr->linenum);
     }
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_for_stmt (struct AstNode *node)
+typecheck_visit_for_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
     Type type;
     struct AstNode *assign_node = node->children;
@@ -214,10 +231,11 @@ typecheck_visit_for_stmt (struct AstNode *node)
                 "Error: Value of stop condition is not of Integer type. "
                 "Check line %d.\n", expr2_node->linenum);
     }
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_binary_expr (struct AstNode *node)
+typecheck_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 {
     Type type1;
     Type type2;
@@ -234,10 +252,11 @@ typecheck_visit_binary_expr (struct AstNode *node)
                 "Error: Operation '%s' over incompatible types on line %d.\n",
                 operator->name, operator->linenum);
     }
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_notfactor (struct AstNode *node)
+typecheck_visit_notfactor (struct _Visitor *visitor, struct AstNode *node)
 {
     Type type = _get_expression_type(node->children->sibling);
 
@@ -247,10 +266,11 @@ typecheck_visit_notfactor (struct AstNode *node)
                 "Error: Operation 'not' over non-boolean type on line %d.\n",
                 node->linenum);
     }
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_call (struct AstNode *node)
+typecheck_visit_call (struct _Visitor *visitor, struct AstNode *node)
 {
     int i;
     char *name;
@@ -268,10 +288,11 @@ typecheck_visit_call (struct AstNode *node)
     }
 
     node->type = sym->type;
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_callparam_list (struct AstNode *node)
+typecheck_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
 {
     int i;
     struct AstNode *temp;
@@ -293,10 +314,12 @@ typecheck_visit_callparam_list (struct AstNode *node)
         fprintf(stderr, "Error: Expecting %d parameters, received %d.\n",
                 i, procfunc_symbol->params);
     }
+
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
-typecheck_visit_identifier (struct AstNode *node)
+typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
     Symbol *sym;
 
@@ -351,6 +374,7 @@ typecheck_visit_identifier (struct AstNode *node)
         }
     }
 
+    ast_node_accept_children(node->children, visitor);
 }
 
 static Symbol *
@@ -389,13 +413,6 @@ _get_expression_type(struct AstNode *node)
         case NOTFACTOR:
             return BOOLEAN;
 
-        //case ADD_EXPR:
-        //case MUL_EXPR:
-        //    return INTEGER;
-
-        //case REL_EXPR:
-        //    return BOOLEAN;
-
         case CALL:
             name = node->children->symbol->name;
             sym = symbol_lookup(global_symtab, name);
@@ -409,24 +426,3 @@ _get_expression_type(struct AstNode *node)
             return node->type;
     }
 }
-
-/*static Type
-_get_func_type(struct AstNode *node)
-{
-    Symbol *symbol;
-    char *name;
-
-    if (node->kind != FUNCTION)
-        return VOID;
-
-    name = node->children->symbol->name;
-    symbol = symbol_lookup(global_symtab, name);
-
-    if (symbol == NULL) {
-        fprintf(stderr, "Error: Undeclared symbol '%s' in line %d\n",
-                name, node->linenum);
-        return VOID;
-    }
-
-    return symbol->type;
-}*/

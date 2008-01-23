@@ -19,6 +19,5 @@ void llvm_codegen_visit_identifier (struct AstNode *node);
 void llvm_codegen_visit_literal (struct AstNode *node);
 
 void llvm_codegen_visit_simplenode (struct AstNode *node);
-void llvm_codegen_close_group ();
 
 #endif // LLVM_CODEGEN_VISITOR_H

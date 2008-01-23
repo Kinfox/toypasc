@@ -89,110 +89,132 @@ ast_node_add_sibling(struct AstNode *self, struct AstNode *sibling)
 void
 ast_node_accept(struct AstNode *self, Visitor *visitor)
 {
-    struct AstNode *temp;
-    bool opened_group = FALSE;
+    VisitFunc visit;
+
+    if (self == NULL || self->visited)
+        return;
+
+    self->visited = TRUE;
 
     switch (self->kind) {
         case PROGRAM:
             ast_node_unset_visited(self);
-            visitor->visit_program(self);
-            opened_group = TRUE;
+            visit = visitor->visit_program;
             break;
-        case PROGDECL:
-            visitor->visit_programdecl(self);
+        case PROGRAM_DECL:
+            visit = visitor->visit_programdecl;
             break;
         case VARDECL_LIST:
-            visitor->visit_vardecl_list(self);
-            opened_group = TRUE;
+            visit = visitor->visit_vardecl_list;
             break;
         case VARDECL:
-            visitor->visit_vardecl(self);
+            visit = visitor->visit_vardecl;
             break;
         case IDENT_LIST:
-            visitor->visit_identifier_list(self);
-            opened_group = TRUE;
+            visit = visitor->visit_identifier_list;
             break;
         case PROCFUNC_LIST:
-            visitor->visit_procfunc_list(self);
+            visit = visitor->visit_procfunc_list;
             break;
         case PROCEDURE:
-            visitor->visit_procedure(self);
-            opened_group = TRUE;
+            visit = visitor->visit_procedure;
             break;
         case FUNCTION:
-            visitor->visit_function(self);
-            opened_group = TRUE;
+            visit = visitor->visit_function;
             break;
         case PARAM_LIST:
-            visitor->visit_param_list(self);
-            opened_group = TRUE;
+            visit = visitor->visit_param_list;
             break;
         case PARAMETER:
-            visitor->visit_parameter(self);
+            visit = visitor->visit_parameter;
             break;
         case STATEMENT_LIST:
-            visitor->visit_statement_list(self);
-            opened_group = TRUE;
+            visit = visitor->visit_statement_list;
             break;
         case PRINTINT_STMT:
-            visitor->visit_printint_stmt(self);
+            visit = visitor->visit_printint_stmt;
             break;
         case PRINTCHAR_STMT:
-            visitor->visit_printchar_stmt(self);
+            visit = visitor->visit_printchar_stmt;
             break;
         case PRINTBOOL_STMT:
-            visitor->visit_printbool_stmt(self);
+            visit = visitor->visit_printbool_stmt;
             break;
         case PRINTLINE_STMT:
-            visitor->visit_printline_stmt(self);
+            visit = visitor->visit_printline_stmt;
             break;
         case ASSIGNMENT_STMT:
-            visitor->visit_assignment_stmt(self);
+            visit = visitor->visit_assignment_stmt;
             break;
         case IF_STMT:
-            visitor->visit_if_stmt(self);
+            visit = visitor->visit_if_stmt;
             break;
         case WHILE_STMT:
-            visitor->visit_while_stmt(self);
+            visit = visitor->visit_while_stmt;
             break;
         case FOR_STMT:
-            visitor->visit_for_stmt(self);
+            visit = visitor->visit_for_stmt;
             break;
         case REL_EXPR:
-            visitor->visit_rel_expr(self);
+            visit = visitor->visit_rel_expr;
             break;
         case ADD_EXPR:
-            visitor->visit_add_expr(self);
+            visit = visitor->visit_add_expr;
             break;
         case MUL_EXPR:
-            visitor->visit_mul_expr(self);
+            visit = visitor->visit_mul_expr;
             break;
         case NOTFACTOR:
-            visitor->visit_notfactor(self);
+            visit = visitor->visit_notfactor;
             break;
         case CALL:
-            visitor->visit_call(self);
+            visit = visitor->visit_call;
             break;
         case CALLPARAM_LIST:
-            visitor->visit_callparam_list(self);
-            opened_group = TRUE;
+            visit = visitor->visit_callparam_list;
             break;
         case IDENTIFIER:
-            visitor->visit_identifier(self);
+            visit = visitor->visit_identifier;
             break;
         case INT_LITERAL:
         case BOOL_LITERAL:
         case CHAR_LITERAL:
-            visitor->visit_literal(self);
+            visit = visitor->visit_literal;
             break;
+        case T_PLUS:
+        case T_MINUS:
+        case T_OR:
+            visit = visitor->visit_add_op;
+            break;
+        case T_STAR:
+        case T_SLASH:
+        case T_AND:
+            visit = visitor->visit_mul_op;
+            break;
+        case T_EQUAL:
+        case T_NOTEQUAL:
+        case T_LESSER:
+        case T_GREATER:
+        case T_LESSEREQUAL:
+        case T_GREATEREQUAL:
+            visit = visitor->visit_rel_op;
+            break;
+        case T_NOT:
+            visit = visitor->visit_not_op;
+            break;
+        default:
+            visit = NULL;
     }
 
-    for (temp = self->children; temp != NULL; temp = temp->sibling)
+    if (visit != NULL)
+        visit(visitor, self);
+}
+
+void
+ast_node_accept_children(struct AstNode *self, Visitor *visitor)
+{
+    struct AstNode *temp;
+    for (temp = self; temp != NULL; temp = temp->sibling)
         ast_node_accept(temp, visitor);
-
-    if (opened_group) {
-        if (visitor->close_group != NULL)
-            visitor->close_group();
-    }
 }
 

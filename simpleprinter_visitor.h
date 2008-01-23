@@ -5,6 +5,6 @@
 
 Visitor *simpleprinter_new();
 
-void simpleprinter_visit (struct AstNode *node);
+void simpleprinter_visit (struct _Visitor *,  struct AstNode *);
 
 #endif // SIMPLEPRINTER_VISITOR_H

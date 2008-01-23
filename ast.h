@@ -18,44 +18,50 @@ struct AstNode {
     struct AstNode* sibling;
 };
 
-typedef struct {
-    void (*visit_program)(struct AstNode *);
-    void (*visit_programdecl)(struct AstNode *);
-    void (*visit_vardecl_list)(struct AstNode *);
-    void (*visit_vardecl)(struct AstNode *);
-    void (*visit_identifier_list)(struct AstNode *);
-    void (*visit_identifier)(struct AstNode *);
-    void (*visit_procfunc_list)(struct AstNode *);
-    void (*visit_procedure)(struct AstNode *);
-    void (*visit_function)(struct AstNode *);
-    void (*visit_param_list)(struct AstNode *);
-    void (*visit_parameter)(struct AstNode *);
-    void (*visit_statement_list)(struct AstNode *);
-    void (*visit_printint_stmt)(struct AstNode *);
-    void (*visit_printchar_stmt)(struct AstNode *);
-    void (*visit_printbool_stmt)(struct AstNode *);
-    void (*visit_printline_stmt)(struct AstNode *);
-    void (*visit_assignment_stmt)(struct AstNode *);
-    void (*visit_if_stmt)(struct AstNode *);
-    void (*visit_while_stmt)(struct AstNode *);
-    void (*visit_for_stmt)(struct AstNode *);
-    void (*visit_rel_expr)(struct AstNode *);
-    void (*visit_add_expr)(struct AstNode *);
-    void (*visit_mul_expr)(struct AstNode *);
-    void (*visit_notfactor)(struct AstNode *);
-    void (*visit_call)(struct AstNode *);
-    void (*visit_callparam_list)(struct AstNode *);
-    void (*visit_literal)(struct AstNode *);
-    void (*close_group)();
+typedef struct _Visitor {
+    void (*visit_program) (struct _Visitor *, struct AstNode *);
+    void (*visit_programdecl) (struct _Visitor *, struct AstNode *);
+    void (*visit_vardecl_list) (struct _Visitor *, struct AstNode *);
+    void (*visit_vardecl) (struct _Visitor *, struct AstNode *);
+    void (*visit_identifier_list) (struct _Visitor *, struct AstNode *);
+    void (*visit_identifier) (struct _Visitor *, struct AstNode *);
+    void (*visit_procfunc_list) (struct _Visitor *, struct AstNode *);
+    void (*visit_procedure) (struct _Visitor *, struct AstNode *);
+    void (*visit_function) (struct _Visitor *, struct AstNode *);
+    void (*visit_param_list) (struct _Visitor *, struct AstNode *);
+    void (*visit_parameter) (struct _Visitor *, struct AstNode *);
+    void (*visit_statement_list) (struct _Visitor *, struct AstNode *);
+    void (*visit_printint_stmt) (struct _Visitor *, struct AstNode *);
+    void (*visit_printchar_stmt) (struct _Visitor *, struct AstNode *);
+    void (*visit_printbool_stmt) (struct _Visitor *, struct AstNode *);
+    void (*visit_printline_stmt) (struct _Visitor *, struct AstNode *);
+    void (*visit_assignment_stmt) (struct _Visitor *, struct AstNode *);
+    void (*visit_if_stmt) (struct _Visitor *, struct AstNode *);
+    void (*visit_while_stmt) (struct _Visitor *, struct AstNode *);
+    void (*visit_for_stmt) (struct _Visitor *, struct AstNode *);
+    void (*visit_rel_expr) (struct _Visitor *, struct AstNode *);
+    void (*visit_add_expr) (struct _Visitor *, struct AstNode *);
+    void (*visit_mul_expr) (struct _Visitor *, struct AstNode *);
+    void (*visit_notfactor) (struct _Visitor *, struct AstNode *);
+    void (*visit_call) (struct _Visitor *, struct AstNode *);
+    void (*visit_callparam_list) (struct _Visitor *, struct AstNode *);
+    void (*visit_literal) (struct _Visitor *, struct AstNode *);
+    void (*visit_add_op) (struct _Visitor *, struct AstNode *);
+    void (*visit_mul_op) (struct _Visitor *, struct AstNode *);
+    void (*visit_rel_op) (struct _Visitor *, struct AstNode *);
+    void (*visit_not_op) (struct _Visitor *, struct AstNode *);
 } Visitor;
 
-struct AstNode *ast_node_new(const char* name, int kind, int type,
-                             int linenum, Symbol *symbol);
-void ast_node_destroy(struct AstNode *self);
+typedef void (*VisitFunc)(struct _Visitor *, struct AstNode *);
 
-void ast_node_unset_visited(struct AstNode *self);
-void ast_node_add_child(struct AstNode *self, struct AstNode *child);
-void ast_node_add_sibling(struct AstNode *self, struct AstNode *sibling);
-void ast_node_accept(struct AstNode *self, Visitor *visitor);
+struct AstNode *ast_node_new(const char *name, int kind, int type,
+                             int linenum, Symbol *symbol);
+void ast_node_destroy(struct AstNode *);
+
+void ast_node_unset_visited(struct AstNode *);
+void ast_node_add_child(struct AstNode *, struct AstNode *);
+void ast_node_add_sibling(struct AstNode *, struct AstNode *);
+void ast_node_accept(struct AstNode *, Visitor *);
+void ast_node_accept_children(struct AstNode *, Visitor *);
 
 #endif // AST_H

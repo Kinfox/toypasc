@@ -35,34 +35,37 @@ simpleprinter_new()
     visitor->visit_callparam_list = &simpleprinter_visit;
     visitor->visit_identifier = &simpleprinter_visit;
     visitor->visit_literal = &simpleprinter_visit;
-    visitor->close_group = NULL;
+    visitor->visit_add_op = &simpleprinter_visit;
+    visitor->visit_mul_op = &simpleprinter_visit;
+    visitor->visit_rel_op = &simpleprinter_visit;
+    visitor->visit_not_op = &simpleprinter_visit;
 
     return visitor;
 }
 
 void
-simpleprinter_visit(struct AstNode *self)
+simpleprinter_visit(struct _Visitor *visitor, struct AstNode *node)
 {
     int i;
     struct AstNode *temp;
 
-    if (self == NULL)
+    if (node == NULL)
         return;
 
-    printf("(AstNode) %x : %s\n", self, self->name);
-    printf("kind: %d\n", self->kind);
-    printf("type: %d\n", self->type);
+    printf("(AstNode) %x : %s\n", node, node->name);
+    printf("kind: %d\n", node->kind);
+    printf("type: %d\n", node->type);
     printf("value: ");
-    value_print(&self->value, self->type);
-    printf("\nlinenum: %d\n", self->linenum);
-    if (self->symbol != NULL)
-        printf("symbol: %x (\"%s\")\n", self->symbol, self->symbol->name);
+    value_print(&node->value, node->type);
+    printf("\nlinenum: %d\n", node->linenum);
+    if (node->symbol != NULL)
+        printf("symbol: %x (\"%s\")\n", node->symbol, node->symbol->name);
 
-    printf("Parent: (AstNode) %x\n", self->parent);
+    printf("Parent: (AstNode) %x\n", node->parent);
 
-    if (self->children != NULL) {
+    if (node->children != NULL) {
         printf("Children\n");
-        for (temp = self->children; temp != NULL; temp = temp->sibling) {
+        for (temp = node->children; temp != NULL; temp = temp->sibling) {
             printf("\t(AstNode) %x", temp);
             if (temp->name != NULL)
                 printf(" : %s", temp->name);
@@ -71,6 +74,5 @@ simpleprinter_visit(struct AstNode *self)
     }
     printf("\n");
 
-    simpleprinter_visit(self->children);
-    simpleprinter_visit(self->sibling);
+    ast_node_accept_children(node->children, visitor);
 }

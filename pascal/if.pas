@@ -5,7 +5,7 @@ var foo, bar : Boolean;
 
 begin
     foo := true;
-    bar := False;
+    bar := false;
     i := 1;
 
     if i * 204 > 5012 then

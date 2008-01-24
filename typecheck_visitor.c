@@ -153,21 +153,23 @@ typecheck_visit_printbool_stmt (struct _Visitor *visitor, struct AstNode *node)
 void
 typecheck_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    struct AstNode *node1 = node->children;
-    struct AstNode *node2 = node1->sibling;
+    struct AstNode *lnode = node->children;
+    struct AstNode *rnode = lnode->sibling;
 
-    if (node1->kind != IDENTIFIER) {
+    if (lnode->kind != IDENTIFIER) {
         node->type = ERROR;
         fprintf(stderr,
                 "Error: Left side of assignment must be an Identifier. Check line %d.\n",
                 node->linenum);
-    } else if (_get_expression_type(node1) != _get_expression_type(node2)) {
+    } else if (_get_expression_type(lnode) != _get_expression_type(rnode)) {
         node->type = ERROR;
         fprintf(stderr,
                 "Error: Incompatible types on assignment operation in line %d.\n",
                 node->linenum);
     }
-    ast_node_accept_children(node->children, visitor);
+
+    lnode->lvalue = TRUE;
+    ast_node_accept_children(lnode, visitor);
 }
 
 void

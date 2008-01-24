@@ -14,6 +14,7 @@ symbol_new(char const * name)
     symbol->is_procfunc = FALSE;
     symbol->is_global = FALSE;
     symbol->param_types = (int *) malloc (sizeof(int) * 10);
+    symbol->stack_index = -1;
 
     symbol->next = NULL;
 

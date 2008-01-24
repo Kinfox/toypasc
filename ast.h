@@ -13,6 +13,7 @@ struct AstNode {
     Symbol *symbol;
     int linenum;
     bool visited;
+    bool lvalue;
     struct AstNode* parent;
     struct AstNode* children;
     struct AstNode* sibling;

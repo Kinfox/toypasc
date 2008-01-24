@@ -23,6 +23,7 @@ ast_node_new(const char* name, int kind, int type,
     node->linenum = linenum;
     node->symbol = symbol;
     node->visited = FALSE;
+    node->lvalue = FALSE;
     node->parent = NULL;
     node->children = NULL;
     node->sibling = NULL;

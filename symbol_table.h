@@ -12,6 +12,7 @@ typedef struct _symbol {
     bool is_procfunc;
     bool is_global;
     Type *param_types;
+    int stack_index;
     struct _symbol *next;
 } Symbol;
 

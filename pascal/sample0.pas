@@ -4,21 +4,27 @@ Var x : Integer;
 {var a, b: Boolean;
 var c: char;}
 
-Procedure myproc (i : integer);
-var ck : integer;
-Begin
-    {ck := i * 2 + 3;}
-    ck := 2 + 3;
-    x := 5 + 5;
-    printint(ck);
-    println();
-    printint(i)
-End;
-
-{FunCtion myfunc (i : integer) : integer;
+FunCtion myfunc (i : integer) : integer;
 Begin
     myfunc := 539;
-    println()
+    x := 300 + 3 + 2 * 7
+End;
+
+Procedure myproc (i : integer);
+var ck, n : integer;
+var m : boolean;
+Begin
+    {ck := i * 2 + 3;}
+    ck := 11 + 22;
+    {ck := 33 - ck;
+    ck := 44 * myfunc(55);}
+    m := false and true;
+    x := ck
+    {m := true or m
+    {x := 5 + 5;
+    printint(ck);
+    println();
+    printint(i)}
 End;
 
 {FunCtion otherfunc (fint : Integer, fchar: Char) : Integer;
@@ -31,10 +37,11 @@ End;
 }
 
 Begin
-    {x := 2 + 3;}
+    x := 2 + 3;
+    x := 2;
     {x := 2 + 3 * 5 + 9;}
-    {printint(x);}
-    println();
+    {printint(x);
+    println();}
     myproc(7);
     {x := myfunc(65);
     printint(x);

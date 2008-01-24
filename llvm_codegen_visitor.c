@@ -232,6 +232,8 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
     void __print_parameters(struct AstNode *node, int index) {
         if (index > -1)
             printf("%%%d", index);
+        else if (IS_LITERAL(node->kind))
+            ast_node_accept(node, visitor);
         else if (node->symbol->stack_index > -1)
             printf("%%%d", node->symbol->stack_index);
         else

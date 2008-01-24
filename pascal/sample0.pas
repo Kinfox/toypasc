@@ -8,16 +8,19 @@ FunCtion myfunc (i : integer) : integer;
 Begin
     myfunc := 539;
     x := 300 + 3 + 2 * 7
+    {myfunc := x}{FIXME}
 End;
 
 Procedure myproc (i : integer);
 var ck, n : integer;
 var m : boolean;
 Begin
-    {ck := i * 2 + 3;}
+    i := 4;
+    ck := 5;
+    ck := i * 2 + 3;
     ck := 11 + 22;
     {ck := 33 - ck;
-    ck := 44 * myfunc(55);}
+    {ck := 44 * myfunc(55);}
     m := false and true;
     x := ck
     {m := true or m

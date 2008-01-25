@@ -5,9 +5,10 @@
 
 static int stack_size = -1;
 
-static int _get_type_size(Type type);
-static void _print_load(struct AstNode *node, Visitor *visitor);
 static void _print_boolean(struct AstNode *node);
+static void _print_load(struct AstNode *node, Visitor *visitor);
+static int _get_type_size(Type type);
+static int _process_expression(struct AstNode *rnode, Visitor *visitor);
 
 Visitor *
 llvm_codegen_new()
@@ -76,9 +77,13 @@ llvm_codegen_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
     ast_node_accept(node->children, visitor);
     printf("\n\n");
     printf("; Declare the string constants as a global constants...\n");
-    printf("@.true_str = internal constant [5 x i8] c\"true\\00\"\n");
+    printf("@bool_str = global [2 x i8*] [ "
+           "i8* getelementptr ([6 x i8]* @.false_str, i32 0, i32 0), "
+           "i8* getelementptr ([5 x i8]* @.true_str, i32 0, i32 0) ]\n");
     printf("@.false_str = internal constant [6 x i8] c\"false\\00\"\n");
+    printf("@.true_str = internal constant [5 x i8] c\"true\\00\"\n");
     printf("@.int_fmt = internal constant [3 x i8] c\"%%d\\00\"\n");
+    printf("@.bool_fmt = internal constant [3 x i8] c\"%%s\\00\"\n");
 
     printf("\n; External declaration of functions\n");
     printf("declare i32 @puts(i8 *)\n");
@@ -99,8 +104,7 @@ llvm_codegen_visit_identifier_list (struct _Visitor *visitor, struct AstNode *no
 {
     struct AstNode *child;
 
-    // FIXME: porque nunca entra aqui?
-    printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+    /* FIXME */ fprintf(stderr, "Never reaches here?\n");
     for (child = node->children; child != NULL; child = child->sibling) {
         ast_node_accept(child, visitor);
         if (child->sibling != NULL)
@@ -146,9 +150,10 @@ llvm_codegen_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
 
     printf(TAB"ret ");
     PRINT_TYPE(node->type);
-
-    if (node->kind == FUNCTION)
-        printf(" %%%d", node->children->symbol->stack_index);
+    if (node->kind == FUNCTION) {
+        printf(" ");
+        PRINT_VALUE(node->children, node->children->symbol->stack_index);
+    }
 
     printf("\n}\n\n");
 }
@@ -187,7 +192,6 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
     struct AstNode *op = lnode->sibling;
     struct AstNode *rnode = op->sibling;
 
-    /* FIXME */ //printf("; [BinaryExpr] (%d)\n", stack_size);
     int __process_binexpr_node(struct AstNode *node) {
         if (node->kind == IDENTIFIER) {
             if (node->symbol->is_global) {
@@ -219,7 +223,7 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
     if (IS_LITERAL(lnode->kind) && IS_LITERAL(rnode->kind)) {
         ast_node_accept(op, visitor);
         printf(" ");
-        PRINT_TYPE(node->type);
+        PRINT_TYPE(lnode->type);
         printf(" ");
         ast_node_accept(lnode, visitor);
         printf(", ");
@@ -233,7 +237,7 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 
         ast_node_accept(op, visitor);
         printf(" ");
-        PRINT_TYPE(node->type);
+        PRINT_TYPE(lnode->type);
         printf(" ");
 
         __print_operand(lnode, lindex);
@@ -244,7 +248,6 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
     }
 
     stack_size++;
-    /* FIXME */ //printf("; [BinaryExpr] (%d)\n", stack_size);
 }
 
 void
@@ -257,8 +260,6 @@ void
 llvm_codegen_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
     Symbol *sym = node->symbol;
-
-    /* WARNING: o if abaixo esta 'awkward' */
 
     if (sym->is_global || node->parent->kind == CALL)
         printf("@%s", sym->name);
@@ -310,31 +311,16 @@ llvm_codegen_visit_printint_stmt (struct _Visitor *visitor, struct AstNode *node
 {
     int index = -1;
     struct AstNode *child = node->children;
-    bool is_literal = IS_LITERAL(child->kind);
 
-    if (child->kind == IDENTIFIER) {
-        if (child->symbol->is_global &&
-            !child->symbol->is_procfunc) {
-            _print_load(child, visitor);
-            index = stack_size;
-
-        } else
-            index = child->symbol->stack_index;
-
-    } else if (!is_literal) {
-        ast_node_accept(child, visitor);
-        index = stack_size;
-    }
+    index = _process_expression(child, visitor);
 
     printf(TAB"call i32 (i8* noalias , ...)* bitcast (i32 (i8*, ...)* \n");
     printf(TAB TAB"@printf to i32 (i8* noalias, ...)*)\n");
     printf(TAB TAB"( i8* getelementptr ");
     printf("([3 x i8]* @.int_fmt, i32 0, i32 0) noalias ,\n");
     printf(TAB TAB"i32 ");
-    if (is_literal)
-        ast_node_accept(child, visitor);
-    else
-        printf("%%%d", index);
+    PRINT_VALUE(child, index);
+
     printf(" )\n");
     stack_size++;
 }
@@ -342,8 +328,13 @@ llvm_codegen_visit_printint_stmt (struct _Visitor *visitor, struct AstNode *node
 void
 llvm_codegen_visit_printchar_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf(TAB"call i32 @putchar( i32 ");
-    ast_node_accept(node->children, visitor);
+    int index = -1;
+    struct AstNode *child = node->children;
+
+    index = _process_expression(child, visitor);
+
+    printf(TAB"call i32 @putchar ( i32 ");
+    PRINT_VALUE(child, index);
     printf(" )\n");
     stack_size++;
 }
@@ -351,8 +342,27 @@ llvm_codegen_visit_printchar_stmt (struct _Visitor *visitor, struct AstNode *nod
 void
 llvm_codegen_visit_printbool_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    ast_node_accept(node->children, visitor);
-    printf(TAB"call i32 @puts( i8 * %bool_str )\n");
+    int index = -1;
+    struct AstNode *child = node->children;
+
+    index = _process_expression(child, visitor);
+
+    if (index == -1) {
+        printf(TAB"load i8** getelementptr ([2 x i8*]* @bool_str, i32 0, i32 %d )"
+               ", align 4\n", ast_node_get_value_as_int(child));
+    } else {
+        printf(TAB"getelementptr [2 x i8*]* @bool_str, i32 0, i32 %%%d\n",
+               index);
+        stack_size++;
+        printf(TAB"load i8** %%%d, align 4\n", stack_size);
+    }
+    stack_size++;
+
+    printf(TAB"call i32 (i8* noalias , ...)* bitcast (i32 (i8*, ...)* \n");
+    printf(TAB TAB"@printf to i32 (i8* noalias , ...)*)\n");
+    printf(TAB TAB"( i8* getelementptr ");
+    printf("([3 x i8]* @.bool_fmt, i32 0, i32 0) noalias , \n");
+    printf(TAB TAB"i8* %%%d )\n", stack_size);
     stack_size++;
 }
 
@@ -370,92 +380,80 @@ llvm_codegen_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *no
     struct AstNode *lnode = node->children;
     struct AstNode *rnode = lnode->sibling;
 
-    void __print_rvalue(struct AstNode *node) {
-        if (rindex > -1)
-            printf(" %%%d, ", rindex);
-        else if (node->kind == IDENTIFIER)
-            printf(" %%%d, ", node->symbol->stack_index);
-        else if (IS_LITERAL(node->kind))
-            printf(" %d, ", node->value.integer);
-        else
-            printf(" %%%d, ", stack_size);
-    }
-
-    /* FIXME */ printf("; [Assignment] %s(%d/%d) = %s\n",
+    /* FIXME * */printf("; [Assignment][%s] %s(%d/%d) = %d\n", rnode->name,
                        lnode->symbol->name, lnode->symbol->stack_index,
-                       stack_size, rnode->name);
+                       stack_size, ast_node_get_value_as_int(rnode));
+    /**/
 
     /* rnode */
-    if (!IS_LITERAL(rnode->kind)) {
-        if (rnode->kind != IDENTIFIER) {
-            ast_node_accept(rnode, visitor);
-            rindex = stack_size;
-
-        } else if (rnode->symbol->is_global) {
-            _print_load(rnode, visitor);
-            rindex = stack_size;
-
-        } else {
-            rindex = rnode->symbol->stack_index;
-        }
-
-    } else {
-        printf(TAB"add ");
-        PRINT_TYPE(lnode->type);
-        __print_rvalue(rnode);
-        printf("0\n", stack_size);
-        stack_size++;
-        rindex = stack_size;
-    }
+    rindex = _process_expression(rnode, visitor);
 
     /* lnode */
-    if (!lnode->symbol->is_global) {
-        lnode->symbol->stack_index = rindex;
-
-    } else if (!lnode->symbol->is_procfunc) {
+    if (lnode->symbol->is_global && !lnode->symbol->is_procfunc) {
         printf(TAB"store ");
         PRINT_TYPE(lnode->type);
-        __print_rvalue(rnode);
+        printf(" ");
+        PRINT_VALUE(rnode, rindex);
+        printf(", ");
         PRINT_TYPE(lnode->type);
         printf("* ");
         ast_node_accept(lnode, visitor);
         printf(", align 4\n");
 
-    } else {
+    } else if (rindex == -1) {
+        /*lnode->symbol->stack_index = -1;
+        lnode->symbol->value.integer = rnode->value.integer;
+        lnode->value.integer = rnode->value.integer;*/
+        printf(TAB"add ");
+        PRINT_TYPE(lnode->type);
+        printf(" ");
+        PRINT_VALUE(rnode, rindex);
+        printf(", 0\n");
+        stack_size++;
         lnode->symbol->stack_index = stack_size;
-    }
 
-    /* FIXME */ printf("; [Assignment] %s(%d/%d) = %s\n",
+    } else
+        lnode->symbol->stack_index = rindex;
+
+
+    /* FIXME */ printf("; [Assignment][%s] %s(%d/%d) = %d\n", rnode->name,
                        lnode->symbol->name, lnode->symbol->stack_index,
-                       stack_size, rnode->name);
+                       stack_size, ast_node_get_value_as_int(rnode));
+    /**/
 }
 
 void
 llvm_codegen_visit_if_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    struct AstNode *child;
-    const char *var;
+    int index = -1;
+    struct AstNode *expr = node->children;
+    struct AstNode *cmd1 = expr->sibling;
+    struct AstNode *cmd2 = cmd1->sibling;
 
-    printf("if (");
-    child = node->children; // Expression
-    ast_node_accept(child, visitor);
-    printf(") {\n");
+    printf("; if evaluation, line %d\n", node->linenum);
 
-    child = child->sibling; // If Statements
-    ast_node_accept(child, visitor);
+    index = _process_expression(expr, visitor);
 
-    printf("\n");
-    printf("}");
+    printf(TAB"br i1 ");
+    PRINT_VALUE(expr, index);
+    printf(", label %%cond_true_%x, label ", node);
 
-    child = child->sibling; // Else Statements
+    if (cmd2 == NULL)
+        printf("%%cond_next_%x\n", node);
+    else
+        printf("%%cond_false_%x\n", node);
 
-    if (child != NULL) {
-        printf(" else {\n");
-        ast_node_accept(child, visitor);
-        printf("\n");
-        printf("}");
+    printf("\ncond_true_%x:\n", node);
+    ast_node_accept(cmd1, visitor);
+    printf(TAB"br label %%cond_next_%x\n", node);
+
+    if (cmd2 != NULL) {
+        printf("\ncond_false_%x:\n", node);
+        ast_node_accept(cmd2, visitor);
+        printf(TAB"br label %%cond_next_%x\n", node);
     }
-    printf("\n");
+
+    printf("\ncond_next_%x:\n", node);
 }
 
 void
@@ -478,26 +476,60 @@ llvm_codegen_visit_while_stmt (struct _Visitor *visitor, struct AstNode *node)
 void
 llvm_codegen_visit_for_stmt (struct _Visitor *visitor, struct AstNode *node)
 {
-    struct AstNode *child;
-    const char *var;
+    int index = -1;
+    struct AstNode *asgn = node->children;
+    struct AstNode *expr = asgn->sibling;
+    struct AstNode *stmt = expr->sibling;
 
-    printf("for (");
-    child = node->children; // Assignment
-    ast_node_accept(child, visitor);
+    printf("; for evaluation, line %d\n", node->linenum);
 
-    var = child->children->symbol->name;
-    printf(" %s < ", var);
+    //%tmp512 = ????
+    ast_node_accept(asgn, visitor);
 
-    child = child->sibling; // Stop condition
-    ast_node_accept(child, visitor);
+/*
+    %tmp714 = icmp sgt i32 %tmp512, 0       ; <i1> [#uses=1]
+    br i1 %tmp714, label %bb.preheader, label %bb9
+    */
+    index = _process_expression(expr, visitor);
 
-    printf("; %s++) {\n", var);
+    printf(TAB"br i1 ");
+    PRINT_VALUE(expr, index);
+    printf(", label %%bb_%x.preheader, label %%bb_%x\n", node, node);
 
-    child = child->sibling; // Statements
-    ast_node_accept_children(child, visitor);
+/*
+bb.preheader:       ; preds = %entry
+    %b.promoted = load i32* @b, align 4     ; <i32> [#uses=1]
+    br label %bb
+    */
+    printf("\nbb_%x.preheader:\n", node);
 
-    printf("\n");
-    printf("}\n");
+
+/*
+bb:     ; preds = %bb, %bb.preheader
+    %ITERADOR.010.0 = phi i32 [ 0, %bb.preheader ], [ %tmp3, %bb ]      ; <i32> [#uses=2]
+    %tmp3 = add i32 %ITERADOR.010.0, 1      ; <i32> [#uses=2]
+    %tmp7 = icmp slt i32 %tmp3, %tmp512     ; <i1> [#uses=1]
+    br i1 %tmp7, label %bb, label %bb9.loopexit
+    */
+
+/*
+bb9.loopexit:       ; preds = %bb
+    %b.tmp.0 = add i32 %ITERADOR.010.0, %b.promoted     ; <i32> [#uses=1]
+    %tmp1 = add i32 %b.tmp.0, 1     ; <i32> [#uses=1]
+    store i32 %tmp1, i32* @b, align 4
+    br label %bb9
+*/
+
+/*
+bb9:        ; preds = %bb9.loopexit, %entry
+*/
+
+
+    printf("\ncond_true_%x:\n", node);
+    ast_node_accept(stmt, visitor);
+    printf(TAB"br label %%cond_next_%x\n", node);
+
+    printf("\ncond_next_%x:\n", node);
 }
 
 void
@@ -509,6 +541,32 @@ llvm_codegen_visit_notfactor (struct _Visitor *visitor, struct AstNode *node)
 void
 llvm_codegen_visit_call (struct _Visitor *visitor, struct AstNode *node)
 {
+/*
+    int index = -1;
+    struct AstNode *temp, *child = node->children;
+
+    index = _process_expression(child, visitor);
+
+    temp= child->sibling;
+    if (temp != NULL) {
+        for (temp = temp->children; temp != NULL; temp = temp->sibling) {
+            PRINT_TYPE(child->type);
+            printf(" ");
+            ast_node_accept(child, visitor);
+            if (child->sibling != NULL)
+                printf(", ");
+        }
+    }
+
+    printf(TAB"call ");
+    PRINT_TYPE(child->symbol->type);
+    printf(" ");
+    ast_node_accept(child, visitor);
+    printf("( ");
+
+    printf(" )\n");
+    stack_size++;
+*/
     struct AstNode *child = node->children;
 
     printf(TAB"call ");
@@ -516,17 +574,20 @@ llvm_codegen_visit_call (struct _Visitor *visitor, struct AstNode *node)
     printf(" ");
     ast_node_accept(child, visitor);
     printf("( ");
-    for (child = child->sibling->children; child != NULL;
-         child = child->sibling) {
-        PRINT_TYPE(child->type);
-        printf(" ");
-        ast_node_accept(child, visitor);
-        if (child->sibling != NULL)
-            printf(", ");
+
+    child = child->sibling;
+    if (child != NULL) {
+        for (child = child->children; child != NULL; child = child->sibling) {
+            PRINT_TYPE(child->type);
+            printf(" ");
+            ast_node_accept(child, visitor);
+            if (child->sibling != NULL)
+                printf(", ");
+        }
     }
+
     printf(" )\n");
-    // FIXME: Verifique se a proxima linha estah certa.
-    //stack_size++;
+    stack_size++;
 }
 
 void
@@ -538,7 +599,7 @@ llvm_codegen_visit_simplenode (struct _Visitor *visitor, struct AstNode *node)
 void
 llvm_codegen_visit_binary_op (struct _Visitor *visitor, struct AstNode *node)
 {
-    /* FIXME */printf("; %%%d = \n", stack_size + 1);
+    /* FIXME *printf("; %%%d = \n", stack_size + 1);*/
     switch (node->kind) {
         case T_OR:
             printf(TAB"or");
@@ -546,24 +607,24 @@ llvm_codegen_visit_binary_op (struct _Visitor *visitor, struct AstNode *node)
         case T_AND:
             printf(TAB"and");
             break;
-        /*case T_EQUAL:
-            printf(" == ");
+        case T_EQUAL:
+            printf(TAB"icmp eq");
             break;
         case T_NOTEQUAL:
-            printf(" != ");
+            printf(TAB"icmp ne");
             break;
         case T_LESSER:
-            printf(" < ");
+            printf(TAB"icmp slt");
             break;
         case T_GREATER:
-            printf(" > ");
+            printf(TAB"icmp sgt");
             break;
         case T_LESSEREQUAL:
-            printf(" <= ");
+            printf(TAB"icmp sle");
             break;
         case T_GREATEREQUAL:
-            printf(" >= ");
-            break;*/
+            printf(TAB"icmp sge");
+            break;
         case T_PLUS:
             printf(TAB"add");
             break;
@@ -598,7 +659,6 @@ _print_boolean(struct AstNode *node)
 static void
 _print_load(struct AstNode *node, Visitor *visitor)
 {
-    /* FIXME */printf(";%%%d = \n", stack_size + 1);
     printf(TAB"load ");
     PRINT_TYPE(node->type);
     printf("* ");
@@ -613,11 +673,31 @@ _get_type_size(Type type)
     switch (type) {
         case INTEGER:
             return 32;
-        case BOOLEAN:
-            return 1;
         case CHAR:
             return 8;
+        case BOOLEAN:
+            return 1;
         default:
             return 0;
     }
+}
+
+static int
+_process_expression(struct AstNode *rnode, Visitor *visitor)
+{
+    if (!IS_LITERAL(rnode->kind)) {
+        if (rnode->kind != IDENTIFIER) {
+            ast_node_accept(rnode, visitor);
+            return stack_size;
+
+        } else if (rnode->symbol->is_global) {
+            _print_load(rnode, visitor);
+            return stack_size;
+
+        } else
+            return rnode->symbol->stack_index;
+
+    }
+
+    return -1;
 }

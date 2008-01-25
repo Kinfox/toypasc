@@ -35,7 +35,7 @@ graphprinter_new()
     visitor->visit_add_expr = &graphprinter_visit_binary_expr;
     visitor->visit_mul_expr = &graphprinter_visit_binary_expr;
     visitor->visit_notfactor = &graphprinter_visit_simplenode;
-    visitor->visit_call = &graphprinter_visit_simplenode;
+    visitor->visit_call = &graphprinter_visit_call;
     visitor->visit_callparam_list = &graphprinter_visit_callparam_list;
     visitor->visit_identifier = &graphprinter_visit_identifier;
     visitor->visit_literal = &graphprinter_visit_literal;
@@ -97,7 +97,6 @@ graphprinter_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
-
     ast_node_accept_children(node->children, visitor);
     printf("}\n\n");
 }
@@ -109,7 +108,6 @@ graphprinter_visit_identifier_list (struct _Visitor *visitor, struct AstNode *no
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
-
     ast_node_accept_children(node->children, visitor);
     printf("}\n\n");
 }
@@ -146,7 +144,6 @@ graphprinter_visit_param_list (struct _Visitor *visitor, struct AstNode *node)
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
-
     ast_node_accept_children(node->children, visitor);
     printf("}\n\n");
 }
@@ -159,12 +156,7 @@ graphprinter_visit_statement_list (struct _Visitor *visitor, struct AstNode *nod
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
-
-    if (node->parent->kind == PROGRAM)
-        printf("\tcolor=\"red\";\n");
-
     ast_node_accept_children(node->children, visitor);
-
     printf("}\n\n");
 }
 
@@ -185,8 +177,19 @@ graphprinter_visit_callparam_list (struct _Visitor *visitor, struct AstNode *nod
     printf("\tnode_%x -> node_%x;\n", node->parent, node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-    printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
+    //printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
+    ast_node_accept_children(node->children, visitor);
+    //printf("}\n\n");
+}
 
+void
+graphprinter_visit_call (struct _Visitor *visitor, struct AstNode *node)
+{
+    printf("\tnode_%x -> node_%x;\n", node->parent, node);
+    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
+    printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
+           (node->type == ERROR) ? "FF0000" : "EEFFEE");
+    printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
     ast_node_accept_children(node->children, visitor);
     printf("}\n\n");
 }

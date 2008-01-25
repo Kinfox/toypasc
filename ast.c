@@ -40,6 +40,24 @@ ast_node_destroy(struct AstNode *self)
     }
 }
 
+Value
+ast_node_get_value(struct AstNode *self)
+{
+    if (self->kind == IDENTIFIER)
+        return self->symbol->value;
+
+    return self->value;
+}
+
+int
+ast_node_get_value_as_int(struct AstNode *self)
+{
+    if (self->kind == IDENTIFIER)
+        return self->symbol->value.integer;
+
+    return self->value.integer;
+}
+
 bool
 ast_node_check_errors(struct AstNode *self)
 {

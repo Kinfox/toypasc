@@ -111,6 +111,9 @@
                               yylval->boolean=CAST_BOOLEAN(yytext);
                               return BOOL_LITERAL;
                             }
+"'"\\n"'"                   { uploc; yylval->character='\n';
+                              return CHAR_LITERAL;
+                            }
 "'"."'"                     { uploc; yylval->character=yytext[1];
                               return CHAR_LITERAL;
                             }

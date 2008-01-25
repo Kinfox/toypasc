@@ -1,8 +1,8 @@
 program sample0;
 
 Var x : Integer;
-{var a, b: Boolean;
-var c: char;}
+var b: Boolean;
+var c: char;
 
 FunCtion myfunc (i : integer, b : boolean) : integer;
 Begin
@@ -25,6 +25,16 @@ Begin
     {myfunc := x}{FIXME}
 End;
 
+function getchar() : char;
+begin
+    getchar := 'Z'
+end;
+
+function getbool() : boolean;
+begin
+    getbool := true
+end;
+
 Procedure myproc (i : integer);
 {var ck, n : integer;
 var m : boolean;}
@@ -37,11 +47,17 @@ Begin
     myhumps := 250;
 
     itsatrap := x;
+    itsatrap := myhumps;
     itsatrap := myfunc;
     myfunc := myfunc + 111;
     itsatrap := itsatrap + 1;
-    itsatrap := myhumps;
     itsatrap := myfunc(5, true);
+    printbool(false);
+    printchar('W');
+    printchar('\n');
+    printint(itsatrap);
+    println();
+    itsatrap := myfunc(3, true);
 
     {ck := 5;
     ck := i * 2 + 3;
@@ -91,6 +107,18 @@ Begin
     printint(137);
     println();
     printint(x);}
+
+    printint(myfunc(10, true));
+
+    c := getchar();
+    printchar(c);
+    printchar(getchar());
+
+    b := getbool();
+    printbool(b);
+    printbool(getbool());
+    printbool(true);
+
     println()
 End.
 

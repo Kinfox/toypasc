@@ -14,6 +14,7 @@ void graphprinter_visit_procfunc (struct _Visitor *, struct AstNode *);
 void graphprinter_visit_param_list (struct _Visitor *, struct AstNode *);
 void graphprinter_visit_statement_list (struct _Visitor *, struct AstNode *);
 void graphprinter_visit_binary_expr (struct _Visitor *, struct AstNode *);
+void graphprinter_visit_call (struct _Visitor *, struct AstNode *);
 void graphprinter_visit_callparam_list (struct _Visitor *, struct AstNode *);
 void graphprinter_visit_identifier (struct _Visitor *, struct AstNode *);
 void graphprinter_visit_literal (struct _Visitor *, struct AstNode *);

@@ -36,7 +36,10 @@ Begin
     myfunc := 3;
     myhumps := 250;
 
+    itsatrap := x;
     itsatrap := myfunc;
+    myfunc := myfunc + 111;
+    itsatrap := itsatrap + 1;
     itsatrap := myhumps;
     itsatrap := myfunc(5, true);
 

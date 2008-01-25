@@ -217,7 +217,6 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 
     /* Construcao mais simples */
     if (IS_LITERAL(lnode->kind) && IS_LITERAL(rnode->kind)) {
-        printf(TAB);
         ast_node_accept(op, visitor);
         printf(" ");
         PRINT_TYPE(node->type);
@@ -232,7 +231,6 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
         lindex = __process_binexpr_node(lnode);
         rindex = __process_binexpr_node(rnode);
 
-        printf(TAB);
         ast_node_accept(op, visitor);
         printf(" ");
         PRINT_TYPE(node->type);
@@ -389,24 +387,19 @@ llvm_codegen_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *no
 
     /* rnode */
     if (!IS_LITERAL(rnode->kind)) {
-        if (rnode->kind == IDENTIFIER) {
-        printf(";rnode: %s, symbol: %s (line: %d)",
-                rnode->name, rnode->symbol->name, rnode->linenum);
-            if (rnode->symbol->is_global) {
-                printf(" --- is_global");
-                _print_load(rnode, visitor);
-                rindex = stack_size;
-            } else
-                rindex = rnode->symbol->stack_index;
-            printf("\n");
-        } else {
+        if (rnode->kind != IDENTIFIER) {
             ast_node_accept(rnode, visitor);
             rindex = stack_size;
+
+        } else if (rnode->symbol->is_global) {
+            _print_load(rnode, visitor);
+            rindex = stack_size;
+
+        } else {
+            rindex = rnode->symbol->stack_index;
         }
 
-
     } else {
-        /* FIXME */printf("%%%d = ", stack_size + 1);
         printf(TAB"add ");
         PRINT_TYPE(lnode->type);
         __print_rvalue(rnode);
@@ -418,6 +411,7 @@ llvm_codegen_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *no
     /* lnode */
     if (!lnode->symbol->is_global) {
         lnode->symbol->stack_index = rindex;
+
     } else if (!lnode->symbol->is_procfunc) {
         printf(TAB"store ");
         PRINT_TYPE(lnode->type);
@@ -426,8 +420,10 @@ llvm_codegen_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *no
         printf("* ");
         ast_node_accept(lnode, visitor);
         printf(", align 4\n");
-    } else
+
+    } else {
         lnode->symbol->stack_index = stack_size;
+    }
 
     /* FIXME */ printf("; [Assignment] %s(%d/%d) = %s\n",
                        lnode->symbol->name, lnode->symbol->stack_index,
@@ -529,7 +525,8 @@ llvm_codegen_visit_call (struct _Visitor *visitor, struct AstNode *node)
             printf(", ");
     }
     printf(" )\n");
-    stack_size++;
+    // FIXME: Verifique se a proxima linha estah certa.
+    //stack_size++;
 }
 
 void
@@ -541,13 +538,13 @@ llvm_codegen_visit_simplenode (struct _Visitor *visitor, struct AstNode *node)
 void
 llvm_codegen_visit_binary_op (struct _Visitor *visitor, struct AstNode *node)
 {
-    /* FIXME */printf("%%%d = ", stack_size + 1);
+    /* FIXME */printf("; %%%d = \n", stack_size + 1);
     switch (node->kind) {
         case T_OR:
-            printf("or");
+            printf(TAB"or");
             break;
         case T_AND:
-            printf("and");
+            printf(TAB"and");
             break;
         /*case T_EQUAL:
             printf(" == ");
@@ -568,13 +565,13 @@ llvm_codegen_visit_binary_op (struct _Visitor *visitor, struct AstNode *node)
             printf(" >= ");
             break;*/
         case T_PLUS:
-            printf("add");
+            printf(TAB"add");
             break;
         case T_MINUS:
-            printf("sub");
+            printf(TAB"sub");
             break;
         case T_STAR:
-            printf("mul");
+            printf(TAB"mul");
             break;
         /*case T_SLASH:
             printf(" %s ", node->name);*/
@@ -601,7 +598,7 @@ _print_boolean(struct AstNode *node)
 static void
 _print_load(struct AstNode *node, Visitor *visitor)
 {
-    /* FIXME */printf("%%%d = ", stack_size + 1);
+    /* FIXME */printf(";%%%d = \n", stack_size + 1);
     printf(TAB"load ");
     PRINT_TYPE(node->type);
     printf("* ");

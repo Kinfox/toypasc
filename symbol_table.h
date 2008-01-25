@@ -9,9 +9,10 @@ typedef struct _symbol {
     Value value;
     int decl_linenum;
     int params;
+    Type *param_types;
+    bool is_parameter;
     bool is_procfunc;
     bool is_global;
-    Type *param_types;
     int stack_index;
     struct _symbol *next;
 } Symbol;

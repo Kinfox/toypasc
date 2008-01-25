@@ -22,7 +22,6 @@ ast_node_new(const char* name, int kind, int type,
     node->type = type;
     node->linenum = linenum;
     node->symbol = symbol;
-    node->visited = FALSE;
     node->lvalue = FALSE;
     node->parent = NULL;
     node->children = NULL;
@@ -55,17 +54,6 @@ ast_node_check_errors(struct AstNode *self)
     }
 
     return FALSE;
-}
-
-void
-ast_node_unset_visited(struct AstNode *self)
-{
-    if (self == NULL)
-        return;
-
-    ast_node_unset_visited(self->children);
-    ast_node_unset_visited(self->sibling);
-    self->visited = FALSE;
 }
 
 void
@@ -108,14 +96,11 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
 {
     VisitFunc visit;
 
-    if (self == NULL || self->visited)
+    if (self == NULL)
         return;
-
-    self->visited = TRUE;
 
     switch (self->kind) {
         case PROGRAM:
-            ast_node_unset_visited(self);
             visit = visitor->visit_program;
             break;
         case PROGRAM_DECL:

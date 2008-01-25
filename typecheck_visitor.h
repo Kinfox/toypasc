@@ -18,6 +18,7 @@ void typecheck_visit_procfunc_list (struct _Visitor *, struct AstNode *);
 void typecheck_visit_procfunc(struct _Visitor *, struct AstNode *);
 void typecheck_visit_vardecl_list (struct _Visitor *, struct AstNode *);
 void typecheck_visit_vardecl (struct _Visitor *, struct AstNode *);
+void typecheck_visit_param_list(struct _Visitor *, struct AstNode *);
 void typecheck_visit_parameter (struct _Visitor *, struct AstNode *);
 void typecheck_visit_statement_list(struct _Visitor *, struct AstNode *);
 void typecheck_visit_printint_stmt (struct _Visitor *, struct AstNode *);
@@ -30,10 +31,9 @@ void typecheck_visit_while_stmt (struct _Visitor *, struct AstNode *);
 void typecheck_visit_for_stmt (struct _Visitor *, struct AstNode *);
 void typecheck_visit_binary_expr (struct _Visitor *, struct AstNode *);
 void typecheck_visit_notfactor (struct _Visitor *, struct AstNode *);
-void typecheck_visit_call (struct _Visitor *, struct AstNode *);
 void typecheck_visit_callparam_list (struct _Visitor *, struct AstNode *);
+void typecheck_visit_call (struct _Visitor *, struct AstNode *);
+void typecheck_visit_identifier_list(struct _Visitor *, struct AstNode *);
 void typecheck_visit_identifier (struct _Visitor *, struct AstNode *);
-
-void typecheck_visit_pass (struct _Visitor *, struct AstNode *);
 
 #endif // TYPECHECK_VISITOR_H

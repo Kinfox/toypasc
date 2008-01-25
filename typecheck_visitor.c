@@ -3,8 +3,9 @@
 #include "typecheck_visitor.h"
 
 static bool is_vardecl = FALSE;
+static struct AstNode *inside_procfunc = NULL;
 static Symbol *procfunc_symbol = NULL;
-static Symbol *_symbol_lookup(Symbol *sym);
+static Symbol *_complete_symbol_lookup(Symbol *sym);
 static Type _get_expression_type(struct AstNode *node);
 
 Visitor *
@@ -16,17 +17,16 @@ typecheck_new()
     visitor->visit_programdecl = &typecheck_visit_programdecl;
     visitor->visit_vardecl_list = &typecheck_visit_vardecl_list;
     visitor->visit_vardecl = &typecheck_visit_vardecl;
-    visitor->visit_identifier_list = &typecheck_visit_pass;
     visitor->visit_procfunc_list = &typecheck_visit_procfunc_list;
     visitor->visit_procedure = &typecheck_visit_procfunc;
     visitor->visit_function = &typecheck_visit_procfunc;
-    visitor->visit_param_list = &typecheck_visit_pass;
+    visitor->visit_param_list = &typecheck_visit_param_list;
     visitor->visit_parameter = &typecheck_visit_parameter;
     visitor->visit_statement_list = &typecheck_visit_statement_list;
     visitor->visit_printint_stmt = &typecheck_visit_printint_stmt;
     visitor->visit_printchar_stmt = &typecheck_visit_printchar_stmt;
     visitor->visit_printbool_stmt = &typecheck_visit_printbool_stmt;
-    visitor->visit_printline_stmt = &typecheck_visit_pass;
+    visitor->visit_printline_stmt = NULL;
     visitor->visit_assignment_stmt = &typecheck_visit_assignment_stmt;
     visitor->visit_if_stmt = &typecheck_visit_if_stmt;
     visitor->visit_while_stmt = &typecheck_visit_while_stmt;
@@ -37,28 +37,25 @@ typecheck_new()
     visitor->visit_notfactor = &typecheck_visit_notfactor;
     visitor->visit_call = &typecheck_visit_call;
     visitor->visit_callparam_list = &typecheck_visit_callparam_list;
+    visitor->visit_identifier_list = &typecheck_visit_identifier_list;
     visitor->visit_identifier = &typecheck_visit_identifier;
-    visitor->visit_literal = &typecheck_visit_pass;
-    visitor->visit_add_op = &typecheck_visit_pass;
-    visitor->visit_mul_op = &typecheck_visit_pass;
-    visitor->visit_rel_op = &typecheck_visit_pass;
-    visitor->visit_not_op = &typecheck_visit_pass;
+    visitor->visit_literal = NULL;
+    visitor->visit_add_op = NULL;
+    visitor->visit_mul_op = NULL;
+    visitor->visit_rel_op = NULL;
+    visitor->visit_not_op = NULL;
 
     return visitor;
 }
 
 void
-typecheck_visit_pass(struct _Visitor *visitor, struct AstNode *node)
-{
-    ast_node_accept_children(node->children, visitor);
-}
-
-void
 typecheck_visit_program(struct _Visitor *visitor, struct AstNode *node)
 {
+    is_vardecl = FALSE;
     node->symbol = symbol_new(NULL);
     global_symtab = node->symbol;
     symtab = global_symtab;
+    inside_procfunc = NULL;
     ast_node_accept_children(node->children, visitor);
 }
 
@@ -66,7 +63,8 @@ void
 typecheck_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
 {
     is_vardecl = TRUE;
-    ast_node_accept_children(node->children, visitor);
+    ast_node_accept(node->children, visitor);
+    is_vardecl = FALSE;
 }
 
 void
@@ -74,13 +72,14 @@ typecheck_visit_procfunc_list(struct _Visitor *visitor, struct AstNode *node)
 {
     symtab = global_symtab;
     ast_node_accept_children(node->children, visitor);
+    inside_procfunc = NULL;
 }
 
 void
 typecheck_visit_procfunc(struct _Visitor *visitor, struct AstNode *node)
 {
-    is_vardecl = FALSE;
     symtab = node->symbol;
+    inside_procfunc = node;
     procfunc_symbol = node->children->symbol;
     ast_node_accept_children(node->children, visitor);
 }
@@ -91,6 +90,7 @@ typecheck_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
     is_vardecl = TRUE;
     symtab = node->parent->symbol;
     ast_node_accept_children(node->children, visitor);
+    is_vardecl = FALSE;
 }
 
 void
@@ -101,17 +101,23 @@ typecheck_visit_vardecl (struct _Visitor *visitor, struct AstNode *node)
 }
 
 void
+typecheck_visit_param_list(struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept_children(node->children, visitor);
+}
+
+void
 typecheck_visit_parameter (struct _Visitor *visitor, struct AstNode *node)
 {
     is_vardecl = TRUE;
     declared_type = node->type;
     ast_node_accept_children(node->children, visitor);
+    is_vardecl = FALSE;
 }
 
 void
 typecheck_visit_statement_list(struct _Visitor *visitor, struct AstNode *node)
 {
-    is_vardecl = FALSE;
     declared_type = VOID;
     symtab = node->parent->symbol;
     ast_node_accept_children(node->children, visitor);
@@ -156,20 +162,33 @@ typecheck_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
     struct AstNode *lnode = node->children;
     struct AstNode *rnode = lnode->sibling;
 
-    if (lnode->kind != IDENTIFIER) {
-        node->type = ERROR;
-        fprintf(stderr,
-                "Error: Left side of assignment must be an Identifier. Check line %d.\n",
-                node->linenum);
-    } else if (_get_expression_type(lnode) != _get_expression_type(rnode)) {
+    ast_node_accept(lnode, visitor);
+
+    if (lnode->symbol->is_procfunc) {
+        bool has_error = (inside_procfunc == NULL);
+        if (!has_error)
+            has_error = strcmp(inside_procfunc->children->symbol->name,
+                               lnode->symbol->name);
+
+        if (has_error) {
+            node->type = ERROR;
+            fprintf(stderr,
+                    "Error: lvalue '%s' on assignment operation cannot be an "
+                    "function identifier outside the same function. "
+                    "Check line %d.\n", lnode->symbol->name, node->linenum);
+            return;
+        }
+    }
+
+    if (_get_expression_type(lnode) != _get_expression_type(rnode)) {
         node->type = ERROR;
         fprintf(stderr,
                 "Error: Incompatible types on assignment operation in line %d.\n",
                 node->linenum);
-    }
+    } else
+        lnode->lvalue = TRUE;
 
-    lnode->lvalue = TRUE;
-    ast_node_accept_children(lnode, visitor);
+    ast_node_accept(rnode, visitor);
 }
 
 void
@@ -240,22 +259,19 @@ typecheck_visit_for_stmt (struct _Visitor *visitor, struct AstNode *node)
 void
 typecheck_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 {
-    Type type1;
-    Type type2;
-    struct AstNode *node1 = node->children;
-    struct AstNode *operator = node1->sibling;
-    struct AstNode *node2 = operator->sibling;
+    struct AstNode *lnode = node->children;
+    struct AstNode *op = lnode->sibling;
+    struct AstNode *rnode = op->sibling;
 
-    type1 = _get_expression_type(node1);
-    type2 = _get_expression_type(node2);
+    ast_node_accept(lnode, visitor);
+    ast_node_accept(rnode, visitor);
 
-    if (type1 != type2) {
+    if (_get_expression_type(lnode) != _get_expression_type(rnode)) {
         node->type = ERROR;
         fprintf(stderr,
                 "Error: Operation '%s' over incompatible types on line %d.\n",
-                operator->name, operator->linenum);
+                op->name, op->linenum);
     }
-    ast_node_accept_children(node->children, visitor);
 }
 
 void
@@ -332,6 +348,12 @@ typecheck_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
 }
 
 void
+typecheck_visit_identifier_list(struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept_children(node->children, visitor);
+}
+
+void
 typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
     Symbol *sym;
@@ -341,23 +363,26 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
         node->symbol->type = declared_type;
         node->symbol->is_procfunc = FALSE;
         node->symbol->is_global = (symtab == global_symtab);
+        if (node->parent->kind == PARAMETER)
+            node->symbol->is_parameter = TRUE;
 
         sym = symbol_insert(symtab, node->symbol);
 
         if (node->parent->kind == PARAMETER) {
-            procfunc_symbol->param_types[procfunc_symbol->params] = node->symbol->type;
+            procfunc_symbol->param_types[procfunc_symbol->params] =
+                    node->symbol->type;
             procfunc_symbol->params++;
         }
 
         if (sym != node->symbol) {
             node->type = ERROR;
-            fprintf(stderr, "Error: Symbol '%s' already defined in line XX\n",
-                    sym->name);
+            fprintf(stderr, "Error: Symbol '%s' already defined in line %d\n",
+                    sym->name, sym->decl_linenum);
         }
 
     } else if (node->parent->kind == FUNCTION ||
                node->parent->kind == PROCEDURE) {
-
+        /* FIXME */
         node->symbol->is_procfunc = TRUE;
         node->symbol->is_global = TRUE;
         sym = symbol_insert(global_symtab, node->symbol);
@@ -367,15 +392,16 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 
         if (sym != node->symbol) {
             node->type = ERROR;
-            fprintf(stderr, "Error: Symbol '%s' already defined in line XX\n",
-                    sym->name);
+            fprintf(stderr, "Error: Symbol '%s' already defined in line %d\n",
+                    sym->name, sym->decl_linenum);
         }
 
     } else {
-        sym = _symbol_lookup(node->symbol);
+        sym = _complete_symbol_lookup(node->symbol);
 
         if (sym != NULL)
             node->symbol = sym;
+
         else {
             node->symbol->decl_linenum = 0;
             node->type = ERROR;
@@ -398,12 +424,10 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
             fprintf(stderr, "\n");*/
         }
     }
-
-    ast_node_accept_children(node->children, visitor);
 }
 
 static Symbol *
-_symbol_lookup(Symbol *sym)
+_complete_symbol_lookup(Symbol *sym)
 {
     Symbol *symbol = NULL;
 
@@ -423,7 +447,7 @@ _get_expression_type(struct AstNode *node)
 
     switch (node->kind) {
         case IDENTIFIER:
-            sym = _symbol_lookup(node->symbol);
+            sym = _complete_symbol_lookup(node->symbol);
             if (sym != NULL) {
                 node->type = sym->type;
                 return sym->type;

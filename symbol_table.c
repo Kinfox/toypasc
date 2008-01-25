@@ -11,9 +11,10 @@ symbol_new(char const * name)
     value_set(&symbol->value, symbol->type, NULL);
     symbol->decl_linenum = 0;
     symbol->params = 0;
+    symbol->param_types = (int *) malloc (sizeof(int) * 10);
+    symbol->is_parameter = FALSE;
     symbol->is_procfunc = FALSE;
     symbol->is_global = FALSE;
-    symbol->param_types = (int *) malloc (sizeof(int) * 10);
     symbol->stack_index = -1;
 
     symbol->next = NULL;

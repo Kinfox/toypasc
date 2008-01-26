@@ -46,6 +46,7 @@ typedef enum KindEnum {
     NOTFACTOR,
     CALL,
     CALLPARAM_LIST,
+    CALLPARAM,
     //IDENTIFIER defined as token
     //INT_LITERAL, BOOL_LITERAL, CHAR_LITERAL defined as tokens
 } Kind;

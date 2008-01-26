@@ -41,6 +41,7 @@ c_codegen_new()
     visitor->visit_notfactor = &c_codegen_visit_notfactor;
     visitor->visit_call = &c_codegen_visit_call;
     visitor->visit_callparam_list = &c_codegen_visit_callparam_list;
+    visitor->visit_callparam = NULL;
     visitor->visit_identifier = &c_codegen_visit_identifier;
     visitor->visit_literal = &c_codegen_visit_literal;
     visitor->visit_add_op = &c_codegen_visit_binary_op;

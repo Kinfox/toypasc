@@ -114,8 +114,10 @@ static struct AstNode *ast;
 %type <astnode> StatementList
 %type <astnode> MultiStatement
 %type <astnode> Statement
+%type <astnode> StatementMatched
+%type <astnode> StatementUnmatched
 %type <astnode> IfStatement
-%type <astnode> ElseStatement
+%type <astnode> IfStatementMatched
 %type <astnode> WhileStatement
 %type <astnode> ForStatement
 %type <astnode> PrintStatement
@@ -132,7 +134,8 @@ static struct AstNode *ast;
 
 %type <astnode> Call
 %type <astnode> CallParamList
-%type <astnode> MultiCallParam
+%type <astnode> CallParameter
+%type <astnode> MultiCallParameter
 
 %type <astnode> Assignment
 %type <astnode> Identifier
@@ -328,7 +331,7 @@ SingleParam:
     Identifier T_COLON TYPE_IDENTIFIER
     {
         struct AstNode *ast_node;
-        ast_node = ast_node_new("SingleParam", PARAMETER, $3,
+        ast_node = ast_node_new("Parameter", PARAMETER, $3,
                                 yylloc.last_line, NULL);
         ast_node_add_child(ast_node, $1);  // Identifier
         $$ = ast_node;
@@ -368,12 +371,56 @@ MultiStatement:
     ;
 
 Statement:
+    StatementMatched { $$ = $1 }
+    | StatementUnmatched { $$ = $1 }
+    ;
+
+StatementMatched:
     Assignment { $$ = $1; }
-    | IfStatement { $$ = $1; }
+    | IfStatementMatched { $$ = $1; }
     | WhileStatement { $$ = $1; }
     | ForStatement { $$ = $1; }
     | Call { $$ = $1; }
     | PrintStatement { $$ = $1; }
+    ;
+
+StatementUnmatched:
+    IfStatement { $$ = $1; }
+    | T_IF Expression T_THEN StatementMatched T_ELSE StatementUnmatched
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $2);
+        ast_node_add_child(ast_node, $4);
+        ast_node_add_child(ast_node, $6);
+        $$ = ast_node;
+    }
+    ;
+
+IfStatement:
+    T_IF Expression T_THEN Statements
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $2);
+        ast_node_add_child(ast_node, $4);
+        $$ = ast_node;
+    }
+    ;
+
+IfStatementMatched:
+    T_IF Expression T_THEN StatementMatched T_ELSE StatementMatched
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $2);
+        ast_node_add_child(ast_node, $4);
+        ast_node_add_child(ast_node, $6);
+        $$ = ast_node;
+    }
     ;
 
 PrintStatement:
@@ -436,24 +483,6 @@ Assignment:
         ast_node_add_child(ast_node, $3);
         $$ = ast_node;
     }
-    ;
-
-IfStatement:
-    T_IF Expression T_THEN Statements ElseStatement
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
-                                yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $2);
-        ast_node_add_child(ast_node, $4);
-        ast_node_add_child(ast_node, $5);
-        $$ = ast_node;
-    }
-    ;
-
-ElseStatement:
-    /* empty */ { $$ = NULL; }
-    | T_ELSE Statements { $$ = $2; }
     ;
 
 WhileStatement:
@@ -562,7 +591,7 @@ Call:
 
 CallParamList:
     /* empty */ { $$ = NULL; }
-    | Expression MultiCallParam
+    | CallParameter MultiCallParameter
     {
         struct AstNode *ast_node;
         ast_node = ast_node_new("CallParamList", CALLPARAM_LIST, VOID,
@@ -573,12 +602,24 @@ CallParamList:
     }
     ;
 
-MultiCallParam:
+MultiCallParameter:
     /* empty */ { $$ = NULL; }
-    | T_COMMA Expression MultiCallParam
+    | T_COMMA CallParameter MultiCallParameter
     {
         ast_node_add_sibling($2, $3);
         $$ = $2;
+    }
+    ;
+
+CallParameter:
+    Expression
+    {
+        struct AstNode *ast_node;
+        ast_node = ast_node_new("CallParameter", CALLPARAM,
+                                ((struct AstNode *) $1)->type,
+                                yylloc.last_line, NULL);
+        ast_node_add_child(ast_node, $1);
+        $$ = ast_node;
     }
     ;
 
@@ -788,7 +829,8 @@ main (int argc, char **argv)
 
     if (ast_node_check_errors(ast)) {
         fprintf(stderr, "Too many errors. Aborting.\n");
-        return 1;
+        if (!graph_flag)
+            return 1;
     }
 
     /* Mostra estrutura da AST em forma de texto. */

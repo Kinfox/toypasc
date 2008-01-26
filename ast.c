@@ -21,6 +21,7 @@ ast_node_new(const char* name, int kind, int type,
     node->kind = kind;
     node->type = type;
     node->linenum = linenum;
+    node->child_counter = 0;
     node->symbol = symbol;
     node->lvalue = FALSE;
     node->parent = NULL;
@@ -56,6 +57,12 @@ ast_node_get_value_as_int(struct AstNode *self)
         return self->symbol->value.integer;
 
     return self->value.integer;
+}
+
+int
+ast_node_get_child_counter(struct AstNode *self)
+{
+    return self->child_counter++;
 }
 
 bool
@@ -116,6 +123,8 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
 
     if (self == NULL)
         return;
+
+    self->child_counter = 1;
 
     switch (self->kind) {
         case PROGRAM:
@@ -192,6 +201,9 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
             break;
         case CALLPARAM_LIST:
             visit = visitor->visit_callparam_list;
+            break;
+        case CALLPARAM:
+            visit = visitor->visit_callparam;
             break;
         case IDENTIFIER:
             visit = visitor->visit_identifier;

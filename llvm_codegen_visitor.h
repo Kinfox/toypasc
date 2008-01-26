@@ -41,6 +41,7 @@ void llvm_codegen_visit_binary_expr (struct _Visitor *, struct AstNode *);
 void llvm_codegen_visit_notfactor (struct _Visitor *, struct AstNode *);
 void llvm_codegen_visit_call (struct _Visitor *, struct AstNode *);
 void llvm_codegen_visit_callparam_list (struct _Visitor *, struct AstNode *);
+void llvm_codegen_visit_callparam (struct _Visitor *, struct AstNode *);
 void llvm_codegen_visit_identifier (struct _Visitor *, struct AstNode *);
 void llvm_codegen_visit_literal (struct _Visitor *, struct AstNode *);
 void llvm_codegen_visit_binary_op (struct _Visitor *, struct AstNode *);

@@ -1,15 +1,61 @@
-program simple5;
+program sample5;
+
+var i : integer;
+var c : char;
+
+procedure my_proc();
+var b : boolean;
+begin
+    b := true;
+    printchar('t')
+end;
+
+function blah(c : char) : char;
+begin
+    blah := 'z';
+    printchar(c)
+end;
+
+function getint() : integer;
+begin
+    biz := 22;
+    getint := 33
+end;
+
+function incr(i : integer) : integer;
+begin
+    incr := i + 1
+end;
+
+function three(a : integer, b : integer, c : integer) : integer;
+begin
+    three := a + b + getint()
+end;
 
 Begin
-    if (a < 3) then
-    begin
-        if (b > 3) then
-        begin
-            b := 15;
-        end
-    end
-    else
-    begin
-        i := func(78);
-    end
+    i := getint();
+    printint(i);
+    printint(getint());
+
+    i := incr(getint());
+
+    i := three(3, getint(), i);
+    i := three(i, getint(), 55);
+
+    printint(i);
+    println();
+
+    blah('c');
+    blah(c);
+    blah(blah());
+    blah(c);
+
+    printchar(c);
+    printchar('y');
+    printchar(blah(' '));
+    printint(three(3, i, getint()));
+
+    println()
 End.
+
+

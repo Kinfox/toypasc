@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include "typecheck_visitor.h"
 
-static bool is_vardecl = FALSE;
-static struct AstNode *inside_procfunc = NULL;
-static Symbol *procfunc_symbol = NULL;
+static bool _is_vardecl = FALSE;
+static struct AstNode *_inside_procfunc = NULL;
+static Symbol *_procfunc_symbol = NULL;
 static Symbol *_complete_symbol_lookup(Symbol *sym);
 static Type _get_expression_type(struct AstNode *node);
 
@@ -37,6 +37,7 @@ typecheck_new()
     visitor->visit_notfactor = &typecheck_visit_notfactor;
     visitor->visit_call = &typecheck_visit_call;
     visitor->visit_callparam_list = &typecheck_visit_callparam_list;
+    visitor->visit_callparam = &typecheck_visit_callparam;
     visitor->visit_identifier_list = &typecheck_visit_identifier_list;
     visitor->visit_identifier = &typecheck_visit_identifier;
     visitor->visit_literal = NULL;
@@ -51,20 +52,20 @@ typecheck_new()
 void
 typecheck_visit_program(struct _Visitor *visitor, struct AstNode *node)
 {
-    is_vardecl = FALSE;
+    _is_vardecl = FALSE;
     node->symbol = symbol_new(NULL);
     global_symtab = node->symbol;
     symtab = global_symtab;
-    inside_procfunc = NULL;
+    _inside_procfunc = NULL;
     ast_node_accept_children(node->children, visitor);
 }
 
 void
 typecheck_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
 {
-    is_vardecl = TRUE;
+    _is_vardecl = TRUE;
     ast_node_accept(node->children, visitor);
-    is_vardecl = FALSE;
+    _is_vardecl = FALSE;
 }
 
 void
@@ -72,25 +73,25 @@ typecheck_visit_procfunc_list(struct _Visitor *visitor, struct AstNode *node)
 {
     symtab = global_symtab;
     ast_node_accept_children(node->children, visitor);
-    inside_procfunc = NULL;
+    _inside_procfunc = NULL;
 }
 
 void
 typecheck_visit_procfunc(struct _Visitor *visitor, struct AstNode *node)
 {
     symtab = node->symbol;
-    inside_procfunc = node;
-    procfunc_symbol = node->children->symbol;
+    _inside_procfunc = node;
+    _procfunc_symbol = node->children->symbol;
     ast_node_accept_children(node->children, visitor);
 }
 
 void
 typecheck_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
 {
-    is_vardecl = TRUE;
+    _is_vardecl = TRUE;
     symtab = node->parent->symbol;
     ast_node_accept_children(node->children, visitor);
-    is_vardecl = FALSE;
+    _is_vardecl = FALSE;
 }
 
 void
@@ -103,16 +104,25 @@ typecheck_visit_vardecl (struct _Visitor *visitor, struct AstNode *node)
 void
 typecheck_visit_param_list(struct _Visitor *visitor, struct AstNode *node)
 {
-    ast_node_accept_children(node->children, visitor);
+    int counter;
+    struct AstNode *temp;
+
+    counter = 0;
+    for (temp = node->children; temp != NULL; temp = temp->sibling) {
+        ast_node_accept(temp, visitor);
+        counter++;
+    }
+
+    node->parent->children->symbol->params = counter;
 }
 
 void
 typecheck_visit_parameter (struct _Visitor *visitor, struct AstNode *node)
 {
-    is_vardecl = TRUE;
+    _is_vardecl = TRUE;
     declared_type = node->type;
     ast_node_accept_children(node->children, visitor);
-    is_vardecl = FALSE;
+    _is_vardecl = FALSE;
 }
 
 void
@@ -163,14 +173,13 @@ typecheck_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
     struct AstNode *rnode = lnode->sibling;
 
     ast_node_accept(lnode, visitor);
+    ast_node_accept(rnode, visitor);
 
     if (lnode->symbol->is_procfunc) {
-        bool has_error = (inside_procfunc == NULL);
-        if (!has_error)
-            has_error = strcmp(inside_procfunc->children->symbol->name,
-                               lnode->symbol->name);
+        if (_inside_procfunc == NULL ||
+            strcmp(_inside_procfunc->children->symbol->name,
+                   lnode->symbol->name)) {
 
-        if (has_error) {
             node->type = ERROR;
             fprintf(stderr,
                     "Error: lvalue '%s' on assignment operation cannot be an "
@@ -187,8 +196,6 @@ typecheck_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
                 node->linenum);
     } else
         lnode->lvalue = TRUE;
-
-    ast_node_accept(rnode, visitor);
 }
 
 void
@@ -291,24 +298,19 @@ typecheck_visit_notfactor (struct _Visitor *visitor, struct AstNode *node)
 void
 typecheck_visit_call (struct _Visitor *visitor, struct AstNode *node)
 {
-    int i;
-    char *name;
-    Symbol *sym;
+    Symbol *previous_procfunc;
+    struct AstNode *ident = node->children;
+    struct AstNode *plist = ident->sibling;
 
-    name = node->children->symbol->name;
-    sym = symbol_lookup(global_symtab, name);
-    procfunc_symbol = sym;
+    ast_node_accept(ident, visitor);
 
-    if (sym == NULL) {
-        node->type = ERROR;
-        fprintf(stderr,
-                "Error: Undeclared function or procedure '%s' in line %d\n",
-                name, node->linenum);
-        return;
-    }
+    previous_procfunc = _procfunc_symbol;
+    _procfunc_symbol = ident->symbol;
+    node->type = _procfunc_symbol->type;
 
-    node->type = sym->type;
-    ast_node_accept_children(node->children, visitor);
+    ast_node_accept(plist, visitor);
+
+    _procfunc_symbol = previous_procfunc;
 }
 
 void
@@ -316,39 +318,50 @@ typecheck_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
 {
     int i;
     struct AstNode *temp;
+    struct AstNode *child;
 
     i = 0;
-    for (temp = node->children; temp != NULL; temp = temp->sibling) {
-        if (temp->type != procfunc_symbol->param_types[i]) {
+    for (temp = node->children;
+         temp != NULL && i <= _procfunc_symbol->params;
+         temp = temp->sibling) {
+
+        ast_node_accept(temp, visitor);
+
+        if (temp->type != _procfunc_symbol->param_types[i]) {
             temp->type = ERROR;
             fprintf(stderr, "Error: Call '%s' on line %d, expecting %s "
                     "on parameter %d (",
-                    procfunc_symbol->name, node->linenum,
-                    type_get_lexeme(procfunc_symbol->param_types[i]), i+1);
-            if (temp->symbol != NULL)
-                fprintf(stderr, "'%s'", temp->symbol->name);
-            else
-                value_print(stderr, &temp->value, temp->type);
+                    _procfunc_symbol->name, node->linenum,
+                    type_get_lexeme(_procfunc_symbol->param_types[i]), i+1);
 
-            fprintf(stderr, "), received %s.\n",
-                    type_get_lexeme(temp->type));
+            child = temp->children;
+            if (child->symbol != NULL)
+                fprintf(stderr, "'%s'", child->symbol->name);
+            else
+                value_print(stderr, &child->value, child->type);
+
+            fprintf(stderr, "), received %s.\n", type_get_lexeme(child->type));
         }
 
         i++;
-        if (i > procfunc_symbol->params)
-            break;
-    }
-    if (i != procfunc_symbol->params) {
-        node->type = ERROR;
-        fprintf(stderr, "Error: Expecting %d parameters, received %d.\n",
-                i, procfunc_symbol->params);
     }
 
-    ast_node_accept_children(node->children, visitor);
+    if (i != _procfunc_symbol->params) {
+        node->type = ERROR;
+        fprintf(stderr, "Error: Expecting %d parameters, received %d.\n",
+                _procfunc_symbol->params, i);
+    }
 }
 
 void
-typecheck_visit_identifier_list(struct _Visitor *visitor, struct AstNode *node)
+typecheck_visit_callparam (struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept(node->children, visitor);
+    node->type = node->children->type;
+}
+
+void
+typecheck_visit_identifier_list (struct _Visitor *visitor, struct AstNode *node)
 {
     ast_node_accept_children(node->children, visitor);
 }
@@ -358,20 +371,21 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
     Symbol *sym;
 
-    if (is_vardecl) {
+    if (_is_vardecl) {
         node->type = declared_type;
         node->symbol->type = declared_type;
         node->symbol->is_procfunc = FALSE;
         node->symbol->is_global = (symtab == global_symtab);
+
         if (node->parent->kind == PARAMETER)
             node->symbol->is_parameter = TRUE;
 
         sym = symbol_insert(symtab, node->symbol);
 
         if (node->parent->kind == PARAMETER) {
-            procfunc_symbol->param_types[procfunc_symbol->params] =
+            _procfunc_symbol->param_types[_procfunc_symbol->params] =
                     node->symbol->type;
-            procfunc_symbol->params++;
+            _procfunc_symbol->params++;
         }
 
         if (sym != node->symbol) {
@@ -388,7 +402,7 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
         sym = symbol_insert(global_symtab, node->symbol);
         node->type = node->symbol->type;
         node->parent->type = node->type;
-        procfunc_symbol = node->symbol;
+        _procfunc_symbol = node->symbol;
 
         if (sym != node->symbol) {
             node->type = ERROR;
@@ -409,21 +423,23 @@ typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
                     node->symbol->name, node->linenum);
         }
 
-        if (node->parent->kind == CALLPARAM_LIST) {
+        /*if (node->parent->kind == CALLPARAM_LIST) {
             /*int i;
-            //procfunc_symbol->param_types[procfunc_symbol->params] = node->symbol->type;
-            //procfunc_symbol->params++;
+            //_procfunc_symbol->param_types[_procfunc_symbol->params] = node->symbol->type;
+            //_procfunc_symbol->params++;
             node->type = ERROR;
             fprintf(stderr, "Parameter: %s (%x)\n",
-                    procfunc_symbol->name, procfunc_symbol);
-            fprintf(stderr, "types (%d): ", procfunc_symbol->params);
-            for (i = 0; i < procfunc_symbol->params; i++) {
+                    _procfunc_symbol->name, _procfunc_symbol);
+            fprintf(stderr, "types (%d): ", _procfunc_symbol->params);
+            for (i = 0; i < _procfunc_symbol->params; i++) {
                 fprintf(stderr, "%d ",
-                        procfunc_symbol->param_types[procfunc_symbol->params]);
+                        _procfunc_symbol->param_types[_procfunc_symbol->params]);
             }
-            fprintf(stderr, "\n");*/
-        }
+            fprintf(stderr, "\n");* /
+        }*/
     }
+
+    node->type = node->symbol->type;
 }
 
 static Symbol *
@@ -432,7 +448,6 @@ _complete_symbol_lookup(Symbol *sym)
     Symbol *symbol = NULL;
 
     symbol = symbol_lookup(symtab, sym->name);
-
     if (symbol == NULL)
         symbol = symbol_lookup(global_symtab, sym->name);
 

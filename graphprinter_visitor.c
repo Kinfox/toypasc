@@ -4,6 +4,7 @@
 #include "graphprinter_visitor.h"
 
 static bool is_symboldecl = FALSE;
+static void _print_arrow(struct AstNode *node);
 static void _print_symbol_table(struct AstNode *node);
 static void _print_symbols(Symbol *symbol);
 
@@ -21,7 +22,7 @@ graphprinter_new()
     visitor->visit_procedure = &graphprinter_visit_procfunc;
     visitor->visit_function = &graphprinter_visit_procfunc;
     visitor->visit_param_list = &graphprinter_visit_param_list;
-    visitor->visit_parameter = &graphprinter_visit_simplenode;
+    visitor->visit_parameter = &graphprinter_visit_callparam;
     visitor->visit_statement_list = &graphprinter_visit_statement_list;
     visitor->visit_printint_stmt = &graphprinter_visit_simplenode;
     visitor->visit_printchar_stmt = &graphprinter_visit_simplenode;
@@ -37,6 +38,7 @@ graphprinter_new()
     visitor->visit_notfactor = &graphprinter_visit_simplenode;
     visitor->visit_call = &graphprinter_visit_call;
     visitor->visit_callparam_list = &graphprinter_visit_callparam_list;
+    visitor->visit_callparam = &graphprinter_visit_callparam;
     visitor->visit_identifier = &graphprinter_visit_identifier;
     visitor->visit_literal = &graphprinter_visit_literal;
     visitor->visit_add_op = NULL;
@@ -72,8 +74,9 @@ graphprinter_visit_program(struct _Visitor *visitor, struct AstNode *node)
 void
 graphprinter_visit_simplenode (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
+    _print_arrow(node);
+    printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=",
+           node, node->name, node->linenum);
     printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
            (node->type == ERROR) ? "FF0000" : "EEFFEE");
     ast_node_accept_children(node->children, visitor);
@@ -83,8 +86,9 @@ void
 graphprinter_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
 {
     is_symboldecl = TRUE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
+    _print_arrow(node);
+    printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=",
+           node, node->name, node->linenum);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     ast_node_accept_children(node->children, visitor);
 }
@@ -93,7 +97,7 @@ void
 graphprinter_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
 {
     is_symboldecl = TRUE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
+    _print_arrow(node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
@@ -104,7 +108,7 @@ graphprinter_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
 void
 graphprinter_visit_identifier_list (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
+    _print_arrow(node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
@@ -115,7 +119,7 @@ graphprinter_visit_identifier_list (struct _Visitor *visitor, struct AstNode *no
 void
 graphprinter_visit_procfunc_list (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
+    _print_arrow(node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     ast_node_accept_children(node->children, visitor);
@@ -125,9 +129,9 @@ void
 graphprinter_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
 {
     is_symboldecl = TRUE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\\n'%s'\",style=",
-           node, node->name, node->children->symbol->name);
+    _print_arrow(node);
+    printf("\tnode_%x [label=\"%s\\n<%s>\\n[line: %d]\",style=",
+           node, node->name, type_get_lexeme(node->type), node->linenum);
     printf("filled,color=blue,fillcolor=\"#EEEEFF\"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
 
@@ -140,7 +144,7 @@ void
 graphprinter_visit_param_list (struct _Visitor *visitor, struct AstNode *node)
 {
     is_symboldecl = TRUE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
+    _print_arrow(node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
@@ -152,7 +156,7 @@ void
 graphprinter_visit_statement_list (struct _Visitor *visitor, struct AstNode *node)
 {
     is_symboldecl = FALSE;
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
+    _print_arrow(node);
     printf("\tnode_%x [label=\"%s\",style=", node, node->name);
     printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
@@ -163,7 +167,7 @@ graphprinter_visit_statement_list (struct _Visitor *visitor, struct AstNode *nod
 void
 graphprinter_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
+    _print_arrow(node);
     printf("\tnode_%x [label=\"%s\\n(%s)\",style=",
            node, node->name, node->children->sibling->name);
     printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
@@ -172,21 +176,11 @@ graphprinter_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 }
 
 void
-graphprinter_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
-{
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-    //printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
-    ast_node_accept_children(node->children, visitor);
-    //printf("}\n\n");
-}
-
-void
 graphprinter_visit_call (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
+    _print_arrow(node);
+    printf("\tnode_%x [label=\"%s\\n<%s>\\n[line: %d]\",style=",
+           node, node->name, type_get_lexeme(node->type), node->linenum);
     printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
            (node->type == ERROR) ? "FF0000" : "EEFFEE");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
@@ -195,14 +189,34 @@ graphprinter_visit_call (struct _Visitor *visitor, struct AstNode *node)
 }
 
 void
+graphprinter_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
+{
+    _print_arrow(node);
+    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
+    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
+    ast_node_accept_children(node->children, visitor);
+}
+
+void
+graphprinter_visit_callparam (struct _Visitor *visitor, struct AstNode *node)
+{
+    _print_arrow(node);
+    printf("\tnode_%x [label=\"%s\\n<%s>\",style=",
+           node, node->name, type_get_lexeme(node->type));
+    printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
+           (node->type == ERROR) ? "FF0000" : "EEFFEE");
+    ast_node_accept_children(node->children, visitor);
+}
+
+void
 graphprinter_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
-    printf("\tnode_%x -> node_%x;\n", node->parent, node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#EEFFEE\"];\n");
+    _print_arrow(node);
+    printf("\tnode_%x [label=\"%s\\n(%s)\",style=filled,color=\"#EEFFEE\"];\n",
+           node, node->name, node->symbol->name);
 
     if (node->symbol->decl_linenum == 0) {
-        printf("\tsymbol_%x [label=\"'%s'\\nundeclared\",",
+        printf("\tsymbol_%x [label=\"undeclared\",",
                node->symbol, node->symbol->name);
         printf("color=red,fillcolor=\"#FFEEEE\",style=filled];\n");
     }
@@ -222,74 +236,19 @@ graphprinter_visit_literal (struct _Visitor *visitor, struct AstNode *node)
     printf("\tnode_%x -> literal_%x;\n", node->parent, node);
     printf("\tliteral_%x [label=\"", node);
     value_print(stdout, &node->value, node->type);
-    printf("\",style=filled,color=\"#FFFFCC\"];\n");
+    printf("\\n<%s>\",style=filled,color=\"#FFFFCC\"];\n",
+           node->name, type_get_lexeme(node->type));
     ast_node_accept_children(node->children, visitor);
 }
 
+// Helper functions ----------------------------------------------------------
+
 static void
-_print_graph(struct AstNode *self)
+_print_arrow(struct AstNode *node)
 {
-    int i;
-    bool is_program;
-    bool is_cluster;
-    bool is_funcproc;
-    struct AstNode *temp;
-
-    if (self == NULL)
-        return;
-
-    is_program = self->kind == PROGRAM;
-    is_funcproc = self->kind == PROCEDURE || self->kind == FUNCTION;
-    is_cluster = is_program || is_funcproc ||
-                 self->kind == PROGRAM_DECL ||
-                 strstr(self->name, "List");
-
-    printf("\tnode_%x [label=\"%s\",style=", self, self->name);
-
-    if (is_cluster) {
-        if (is_program)
-            printf("filled,color=orange,fillcolor=\"#FFEEEE\"];\n");
-        else if (is_funcproc)
-            printf("filled,color=blue,fillcolor=\"#EEEEFF\"];\n");
-        else
-            printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
-        printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", self, self->name);
-    } else
-        printf("filled,color=\"#EEFFEE\"];\n");
-
-    if (is_funcproc) {
-        printf("\n\tsubgraph cluster_symtab_0x%x {\t\tstyle=filled;\n", self->symbol);
-        printf("\t\tcolor=\"#EFEFEF\";\n\t\tfontname=Courier;\n");
-        printf("\t\tnode [style=filled,color=white,fillcolor=\"#CCFF99\"];\n");
-        //_ast_node_print_graph_symbol_table(self->symbol);
-        printf("\t}\n\n");
-    }
-
-    if (self->children != NULL) {
-        temp = self->children;
-        while (temp != NULL) {
-            printf("\tnode_%x -> node_%x;\n", self, temp);
-            temp = temp->sibling;
-        }
-    } else {
-        if (self->symbol != NULL) {
-            printf("\tnode_%x -> symbol_%x [color=lightgray,headport=n];\n",
-                   self, self->symbol);
-        } else if (strstr(self->name, "Literal")) {
-            printf("\tliteral_%x [label=\"", self);
-            value_print(stdout, &self->value, self->type);
-            printf("\",style=filled,color=\"#FFFFCC\"];\n");
-            printf("\tnode_%x -> literal_%x;\n", self, self);
-        }
-
-    }
-
-    _print_graph(self->children);
-
-    if (is_cluster)
-        printf("}\n\n");
-
-    _print_graph(self->sibling);
+    printf("\tnode_%x -> node_%x [label=\"%d\",",
+           node->parent, node, ast_node_get_child_counter(node->parent));
+    printf("fontname=Courier];\n");
 }
 
 static void

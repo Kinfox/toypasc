@@ -120,7 +120,7 @@
 [0-9]+                      { uploc; yylval->integer=atoi(yytext);
                               return INT_LITERAL;
                             }
-[A-Za-z][A-Za-z0-9]*        { uploc; yylval->lexeme=strdup(yytext);
+[A-Za-z][A-Za-z0-9_]*       { uploc; yylval->lexeme=strdup(yytext);
                               return IDENTIFIER;
                             }
 

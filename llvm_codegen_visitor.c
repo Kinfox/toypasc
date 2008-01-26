@@ -40,6 +40,7 @@ llvm_codegen_new()
     visitor->visit_notfactor = &llvm_codegen_visit_notfactor;
     visitor->visit_call = &llvm_codegen_visit_call;
     visitor->visit_callparam_list = &llvm_codegen_visit_callparam_list;
+    visitor->visit_callparam = &llvm_codegen_visit_callparam;
     visitor->visit_identifier = &llvm_codegen_visit_identifier;
     visitor->visit_literal = &llvm_codegen_visit_literal;
     visitor->visit_add_op = &llvm_codegen_visit_binary_op;
@@ -252,6 +253,12 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 
 void
 llvm_codegen_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
+{
+    ast_node_accept(node->children, visitor);
+}
+
+void
+llvm_codegen_visit_callparam (struct _Visitor *visitor, struct AstNode *node)
 {
     ast_node_accept(node->children, visitor);
 }

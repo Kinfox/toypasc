@@ -13,7 +13,10 @@ end;
 function blah(c : char) : char;
 begin
     blah := 'z';
-    printchar(c)
+    for i := 0 to 100 do
+    begin
+        printchar(c)
+    end
 end;
 
 function getint() : integer;

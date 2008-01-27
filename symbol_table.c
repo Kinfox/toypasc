@@ -9,9 +9,9 @@ symbol_new(char const * name)
     Symbol * symbol = (Symbol *) malloc (sizeof(Symbol));
     symbol->type = VOID;
     value_set(&symbol->value, symbol->type, NULL);
-    symbol->decl_linenum = 0;
     symbol->params = 0;
-    symbol->param_types = (int *) malloc (sizeof(int) * 10);
+    symbol->param_types = NULL;
+    symbol->decl_linenum = 0;
     symbol->is_parameter = FALSE;
     symbol->is_procfunc = FALSE;
     symbol->is_global = FALSE;

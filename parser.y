@@ -276,6 +276,7 @@ ProcDecl:
         ast_node_add_child(ast_node, $7);  // VarDeclList
         ast_node_add_child(ast_node, $9);  // Statements
 
+        // Tabela de simbolos local
         ast_node->symbol = symbol_new(NULL);
 
         $$ = ast_node;
@@ -288,17 +289,17 @@ FuncDecl:
     {
         Symbol *symtab;
         struct AstNode *ast_node;
-        struct AstNode *id = (struct AstNode *) $2;
 
         ast_node = ast_node_new("FuncDecl", FUNCTION, $7,
                                 yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, id);  // Identifier
+        ast_node_add_child(ast_node, $2);  // Identifier
         ast_node_add_child(ast_node, $4);  // ParamList
         ast_node_add_child(ast_node, $9);  // VarDeclList
         ast_node_add_child(ast_node, $11); // Statements
 
-        id->symbol->type = $7;
+        $2->symbol->type = $7;
 
+        // Tabela de simbolos local
         ast_node->symbol = symbol_new(NULL);
 
         $$ = ast_node;
@@ -564,7 +565,6 @@ NotFactor:
         struct AstNode *op_ast_node;
         ast_node = ast_node_new("NotFactor", NOTFACTOR, BOOLEAN,
                                 yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $1);
         ast_node_add_child(ast_node, $2);
         $$ = ast_node;
     }
@@ -717,13 +717,7 @@ RelOp:
     ;
 
 NotOp:
-    T_NOT
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_NOT, BOOLEAN,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
+    T_NOT { $$ = NULL; }
     ;
 
 Identifier:
@@ -734,7 +728,7 @@ Identifier:
         ast_node = ast_node_new("Identifier", IDENTIFIER, VOID,
                                 yylloc.last_line, NULL);
         ast_node->symbol = symbol_new($1);
-        ast_node->symbol->decl_linenum = yylloc.last_line;
+        //ast_node->symbol->decl_linenum = yylloc.last_line;
         $$ = ast_node;
     }
     ;

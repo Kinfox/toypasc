@@ -22,7 +22,7 @@ graphprinter_new()
     visitor->visit_procedure = &graphprinter_visit_procfunc;
     visitor->visit_function = &graphprinter_visit_procfunc;
     visitor->visit_param_list = &graphprinter_visit_param_list;
-    visitor->visit_parameter = &graphprinter_visit_callparam;
+    visitor->visit_parameter = &graphprinter_visit_parameter;
     visitor->visit_statement_list = &graphprinter_visit_statement_list;
     visitor->visit_printint_stmt = &graphprinter_visit_simplenode;
     visitor->visit_printchar_stmt = &graphprinter_visit_simplenode;
@@ -60,14 +60,16 @@ graphprinter_visit_program(struct _Visitor *visitor, struct AstNode *node)
     printf("\tcompound=true;\n");
     printf("\tranksep=1.0;\n");
     printf("\tnode [fontsize=11,fontname=Courier];\n");
-    printf("\tedge [color=\"#22DDAA\"];\n\n");
+    printf("\tedge [color="COLOR_EDGE_GROUP"];\n\n");
 
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=orange,fillcolor=\"#FFEEEE\"];\n");
+    printf("\tnode_%x [label=\"%s\",fontsize=16,fontname=Courier,",
+           node, node->name);
+    printf("style=filled,color=black,fillcolor="COLOR_FILL_GLOBAL"];\n");
 
     _print_symbol_table(node);
 
     ast_node_accept_children(node->children, visitor);
+
     printf("}\n");
 }
 
@@ -75,10 +77,10 @@ void
 graphprinter_visit_simplenode (struct _Visitor *visitor, struct AstNode *node)
 {
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=",
+    printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=filled,",
            node, node->name, node->linenum);
-    printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
-           (node->type == ERROR) ? "FF0000" : "EEFFEE");
+    printf("fillcolor="COLOR_FILL_COMMON",color=%s];\n",
+           (node->type == ERROR) ? COLOR_EDGE_ERROR : COLOR_FILL_COMMON);
     ast_node_accept_children(node->children, visitor);
 }
 
@@ -87,9 +89,9 @@ graphprinter_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
 {
     is_symboldecl = TRUE;
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=",
+    printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=filled,",
            node, node->name, node->linenum);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
+    printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
     ast_node_accept_children(node->children, visitor);
 }
 
@@ -98,8 +100,8 @@ graphprinter_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
 {
     is_symboldecl = TRUE;
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
+    printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
+    printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
     ast_node_accept_children(node->children, visitor);
     printf("}\n\n");
@@ -109,8 +111,8 @@ void
 graphprinter_visit_identifier_list (struct _Visitor *visitor, struct AstNode *node)
 {
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
+    printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
+    printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
     ast_node_accept_children(node->children, visitor);
     printf("}\n\n");
@@ -120,8 +122,8 @@ void
 graphprinter_visit_procfunc_list (struct _Visitor *visitor, struct AstNode *node)
 {
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
+    printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
+    printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
     ast_node_accept_children(node->children, visitor);
 }
 
@@ -130,9 +132,9 @@ graphprinter_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
 {
     is_symboldecl = TRUE;
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\\n<%s>\\n[line: %d]\",style=",
+    printf("\tnode_%x [label=\"%s\\n<%s>\\n[line: %d]\",style=filled,",
            node, node->name, type_get_lexeme(node->type), node->linenum);
-    printf("filled,color=blue,fillcolor=\"#EEEEFF\"];\n");
+    printf("color=blue,fillcolor="COLOR_EDGE_FUNCT"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
 
     _print_symbol_table(node);
@@ -145,11 +147,21 @@ graphprinter_visit_param_list (struct _Visitor *visitor, struct AstNode *node)
 {
     is_symboldecl = TRUE;
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
+    printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
+    printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
     ast_node_accept_children(node->children, visitor);
     printf("}\n\n");
+}
+
+void
+graphprinter_visit_parameter (struct _Visitor *visitor, struct AstNode *node)
+{
+    _print_arrow(node);
+    printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
+    printf("fillcolor="COLOR_FILL_COMMON",color=%s];\n",
+           (node->type == ERROR) ? COLOR_EDGE_ERROR : COLOR_FILL_COMMON);
+    ast_node_accept_children(node->children, visitor);
 }
 
 void
@@ -157,8 +169,8 @@ graphprinter_visit_statement_list (struct _Visitor *visitor, struct AstNode *nod
 {
     is_symboldecl = FALSE;
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
+    printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
+    printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
     ast_node_accept_children(node->children, visitor);
     printf("}\n\n");
@@ -168,10 +180,10 @@ void
 graphprinter_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 {
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\\n(%s)\",style=",
+    printf("\tnode_%x [label=\"%s\\n'%s'\",style=filled,",
            node, node->name, node->children->sibling->name);
-    printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
-           (node->type == ERROR) ? "FF0000" : "EEFFEE");
+    printf("fillcolor="COLOR_FILL_COMMON",color=%s];\n",
+           (node->type == ERROR) ? COLOR_EDGE_ERROR : COLOR_FILL_COMMON);
     ast_node_accept_children(node->children, visitor);
 }
 
@@ -179,10 +191,10 @@ void
 graphprinter_visit_call (struct _Visitor *visitor, struct AstNode *node)
 {
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\\n<%s>\\n[line: %d]\",style=",
-           node, node->name, type_get_lexeme(node->type), node->linenum);
-    printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
-           (node->type == ERROR) ? "FF0000" : "EEFFEE");
+    printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=filled,",
+           node, node->name, node->linenum);
+    printf("fillcolor="COLOR_FILL_COMMON",color=%s];\n",
+           (node->type == ERROR) ? COLOR_EDGE_ERROR : COLOR_FILL_COMMON);
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
     ast_node_accept_children(node->children, visitor);
     printf("}\n\n");
@@ -192,8 +204,8 @@ void
 graphprinter_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
 {
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\",style=", node, node->name);
-    printf("filled,color=\"#22DDAA\",fillcolor=\"#EEFFEE\"];\n");
+    printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
+    printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
     ast_node_accept_children(node->children, visitor);
 }
 
@@ -201,10 +213,10 @@ void
 graphprinter_visit_callparam (struct _Visitor *visitor, struct AstNode *node)
 {
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\\n<%s>\",style=",
+    printf("\tnode_%x [label=\"%s\\n<%s>\",style=filled,",
            node, node->name, type_get_lexeme(node->type));
-    printf("filled,fillcolor=\"#EEFFEE\",color=\"#%s\"];\n",
-           (node->type == ERROR) ? "FF0000" : "EEFFEE");
+    printf("fillcolor="COLOR_FILL_COMMON",color=%s];\n",
+           (node->type == ERROR) ? COLOR_EDGE_ERROR : COLOR_FILL_COMMON);
     ast_node_accept_children(node->children, visitor);
 }
 
@@ -212,22 +224,30 @@ void
 graphprinter_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\\n(%s)\",style=filled,color=\"#EEFFEE\"];\n",
-           node, node->name, node->symbol->name);
 
-    if (node->symbol->decl_linenum == 0) {
-        printf("\tsymbol_%x [label=\"undeclared\",",
-               node->symbol, node->symbol->name);
-        printf("color=red,fillcolor=\"#FFEEEE\",style=filled];\n");
-    }
+    printf("\tnode_%x [label=\"", node);
 
-    printf("\tnode_%x -> symbol_%x", node, node->symbol);
+    if (node->symbol->decl_linenum == 0)
+        printf("UNDECLARED\\n");
 
-    if (is_symboldecl)
-        printf(" [color=\"#00FF00\"]");
+    printf("%s\\n'%s'\\n<%s>\",style=filled,color=",
+           node->name, node->symbol->name, type_get_lexeme(node->type));
 
-    printf(";\n");
-    ast_node_accept_children(node->children, visitor);
+    if (node->symbol->decl_linenum == 0)
+        printf(COLOR_EDGE_ERROR);
+    else if (node->symbol->is_global)
+        printf(COLOR_FILL_GLOBAL);
+    else
+        printf(COLOR_FILL_LOCAL);
+
+    printf(",fillcolor=");
+
+    if (node->symbol->is_global)
+        printf(COLOR_FILL_GLOBAL);
+    else
+        printf(COLOR_FILL_LOCAL);
+
+    printf("];\n");
 }
 
 void
@@ -236,7 +256,7 @@ graphprinter_visit_literal (struct _Visitor *visitor, struct AstNode *node)
     printf("\tnode_%x -> literal_%x;\n", node->parent, node);
     printf("\tliteral_%x [label=\"", node);
     value_print(stdout, &node->value, node->type);
-    printf("\\n<%s>\",style=filled,color=\"#FFFFCC\"];\n",
+    printf("\\n<%s>\",style=filled,color="COLOR_FILL_LITERAL"];\n",
            node->name, type_get_lexeme(node->type));
     ast_node_accept_children(node->children, visitor);
 }
@@ -248,7 +268,7 @@ _print_arrow(struct AstNode *node)
 {
     printf("\tnode_%x -> node_%x [label=\"%d\",",
            node->parent, node, ast_node_get_child_counter(node->parent));
-    printf("fontname=Courier];\n");
+    printf("fontsize=11,fontname=Courier];\n");
 }
 
 static void
@@ -260,19 +280,19 @@ _print_symbol_table(struct AstNode *node)
     printf("\tnode_%x -> symbol_%x [lhead=cluster_symtab_%x,color=",
            node, node->symbol->next, node);
     if (node->parent == NULL)
-        printf("orange];\n");
+        printf("black];\n");
     else
         printf("blue];\n");
 
-    printf("\n\tsubgraph cluster_symtab_%x {\n\t\tstyle=filled;\n", node);
+    printf("\n\tsubgraph cluster_symtab_%x {\n", node);
 
     if (node->parent == NULL)
-        printf("\t\tcolor=orange;\n");
+        printf("\t\tcolor=black;\n");
     else
         printf("\t\tcolor=blue;\n");
 
-    printf("\t\tstyle=filled;\n\t\tfillcolor=\"#EFEFEF\";\n\t\tfontname=Courier;\n");
-    printf("\t\tnode [style=filled,color=white,fillcolor=\"#CCFF99\"];\n");
+    printf("\t\tstyle=filled;\n\t\tfillcolor="COLOR_FILL_GLOBAL";\n\t\tfontname=Courier;\n");
+    printf("\t\tnode [style=filled,color=white,fillcolor="COLOR_FILL_SYMBOL"];\n");
 
     _print_symbols(node->symbol->next);
 
@@ -289,7 +309,11 @@ _print_symbols(Symbol *symbol)
         printf("\t\tsymbol_%x [shape=record,label=\"{", symbol);
         printf("Symbol|Address: 0x%x\\l|lexeme: %s\\l|", symbol, symbol->name);
         printf("type: %s\\l}\"", type_get_lexeme(symbol->type));
-        printf(",style=filled,color=white,fillcolor=\"#CCFF99\"];\n");
+        printf(",style=filled,color=white,fillcolor="COLOR_FILL_SYMBOL"];\n");
+
+        if (symbol->next != NULL)
+            printf("\tsymbol_%x -> symbol_%x;\n", symbol, symbol->next);
+
     }
 
     _print_symbols(symbol->next);

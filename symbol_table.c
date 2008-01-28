@@ -9,11 +9,10 @@ symbol_new(char const * name)
     Symbol * symbol = (Symbol *) malloc (sizeof(Symbol));
     symbol->type = VOID;
     value_set(&symbol->value, symbol->type, NULL);
-    symbol->params = 0;
+    symbol->params = -1;
     symbol->param_types = NULL;
     symbol->decl_linenum = 0;
     symbol->is_parameter = FALSE;
-    symbol->is_procfunc = FALSE;
     symbol->is_global = FALSE;
     symbol->stack_index = -1;
 
@@ -87,6 +86,12 @@ symbol_table_destroy(Symbol *symtab)
             free(to_kill->name);
         free(to_kill);
     }
+}
+
+bool
+symbol_is_procfunc(Symbol *symbol)
+{
+    return (symbol->params > -1);
 }
 
 void

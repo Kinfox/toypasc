@@ -31,6 +31,8 @@ begin
     test();
     ch := '1';
     forme();
-    forme(ch, 3, true);
-    test(2, 3, 4)
+    forme(111, 222);
+    forme(3, true, ch);
+    forme(7, 8, z);
+    test(2)
 end.

@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "typecheck_visitor.h"
 
-static bool _is_vardecl = FALSE;
 static struct AstNode *_inside_procfunc = NULL;
 static Symbol *_procfunc_symbol = NULL;
 static void _typecheck_print_stmt(struct AstNode *node, Type type, const char *ptype_str);
@@ -52,7 +51,6 @@ typecheck_new()
 void
 typecheck_visit_program(struct _Visitor *visitor, struct AstNode *node)
 {
-    _is_vardecl = FALSE;
     node->symbol = symbol_new(NULL);
     global_symtab = node->symbol;
     symtab = global_symtab;
@@ -63,10 +61,8 @@ typecheck_visit_program(struct _Visitor *visitor, struct AstNode *node)
 void
 typecheck_visit_programdecl (struct _Visitor *visitor, struct AstNode *node)
 {
-    _is_vardecl = TRUE;
     node->children->symbol->decl_linenum = node->linenum;
     ast_node_accept(node->children, visitor);
-    _is_vardecl = FALSE;
 }
 
 void
@@ -92,16 +88,17 @@ typecheck_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
     // Identifier
     symtab = global_symtab;
     ident = node->children;
-    _is_vardecl = TRUE;
+    ident->type = node->type;
 
-    ident->symbol->is_procfunc = TRUE;
+    // params > -1 == identificador eh funcao
+    ident->symbol->params = 0;
+
     ident->symbol->decl_linenum = node->linenum;
 
     ast_node_accept(ident, visitor);
 
-    symtab = node->symbol;
-
     // ParamList, VarDeclList, Statements
+    symtab = node->symbol;
     for (child = ident->sibling; child != NULL; child = child->sibling) {
         ast_node_accept(child, visitor);
         if (child->kind == PARAM_LIST)
@@ -114,12 +111,8 @@ typecheck_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
 {
     struct AstNode *child;
 
-    _is_vardecl = TRUE;
-
     for (child = node->children; child != NULL; child = child->sibling)
         ast_node_accept(child, visitor);
-
-    _is_vardecl = FALSE;
 }
 
 void
@@ -134,8 +127,6 @@ typecheck_visit_param_list(struct _Visitor *visitor, struct AstNode *node)
 {
     int i;
     struct AstNode *child;
-
-    _is_vardecl = TRUE;
 
     node->child_counter = 0;
     for (child = node->children; child != NULL; child = child->sibling) {
@@ -153,8 +144,6 @@ typecheck_visit_param_list(struct _Visitor *visitor, struct AstNode *node)
     }
 
     _procfunc_symbol->params = node->child_counter;
-    _is_vardecl = FALSE;
-
 }
 
 void
@@ -202,7 +191,7 @@ typecheck_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *node)
     ast_node_accept(lnode, visitor);
     ast_node_accept(rnode, visitor);
 
-    if (lnode->symbol->is_procfunc && (_inside_procfunc == NULL ||
+    if (symbol_is_procfunc(lnode->symbol) && (_inside_procfunc == NULL ||
         strcmp(_inside_procfunc->children->symbol->name,
                lnode->symbol->name))) {
         node->type = ERROR;
@@ -326,18 +315,20 @@ typecheck_visit_call (struct _Visitor *visitor, struct AstNode *node)
 
     ast_node_accept(ident, visitor);
 
-    previous_procfunc = _procfunc_symbol;
-    _procfunc_symbol = ident->symbol;
-    node->type = _procfunc_symbol->type;
+    if (ident->type != ERROR) {
+        previous_procfunc = _procfunc_symbol;
+        _procfunc_symbol = ident->symbol;
+        node->type = _procfunc_symbol->type;
 
-    ast_node_accept(plist, visitor);
+        ast_node_accept(plist, visitor);
 
-    params = (plist == NULL) ? 0 : plist->child_counter;
-    if (params != ident->symbol->params) {
-        node->type = ERROR;
-        fprintf(stderr, "Error: Expecting %d parameters, received %d. "
-                        "Check line %d\n",
-                        ident->symbol->params, params, node->linenum);
+        params = (plist == NULL) ? 0 : plist->child_counter;
+        if (params != ident->symbol->params) {
+            node->type = ERROR;
+            fprintf(stderr, "Error: Expecting %d parameters, received %d. "
+                            "Check line %d\n",
+                            ident->symbol->params, params, node->linenum);
+        }
     }
 
     _procfunc_symbol = previous_procfunc;
@@ -364,13 +355,16 @@ typecheck_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
 
         if (child->type != _procfunc_symbol->param_types[i]) {
             node->type = ERROR;
+            //child->type = ERROR;
+            child->type = _procfunc_symbol->param_types[i];
+
             fprintf(stderr, "Error: Call '%s' on line %d, expecting %s "
                             "on parameter %d (",
                     _procfunc_symbol->name, node->linenum,
                     type_get_lexeme(_procfunc_symbol->param_types[i]),
                     i + 1);
 
-            if (child->children->symbol != NULL)
+            if (child->children->kind == IDENTIFIER)
                 fprintf(stderr, "'%s'", child->children->symbol->name);
             else
                 value_print(stderr, &child->value, child->type);
@@ -403,67 +397,37 @@ typecheck_visit_identifier_list (struct _Visitor *visitor, struct AstNode *node)
 void
 typecheck_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
 {
-    Symbol *sym;
+    Symbol *sym = symbol_lookup(symtab, node->symbol->name);
 
-    //fprintf(stderr, "====== identifier[%s(gl?%d)]->decl_linenum: %d\n",
-    //        node->symbol->name, (symtab==global_symtab), node->symbol->decl_linenum);
-
-
-    /*
-    if (sym == NULL && node->symbol->decl_linenum > 0) {
-        node->symbol->type = node->type;
-        node->symbol->is_global = (symtab == global_symtab);
-
-        sym = symbol_insert(symtab, node->symbol);
-
-        if (sym != node->symbol) {
-            node->type = ERROR;
-            fprintf(stderr, "Error: Symbol '%s' already defined in line %d. "
-                    "Check line %d.\n",
-                    sym->name, sym->decl_linenum, node->linenum);
-        } else {
-            node->type = node->symbol->type;
-            node->symbol->decl_linenum = node->linenum;
-        }
-
-    } else {
-        sym = _complete_symbol_lookup(node->symbol);
-
-        if (sym != NULL) {
-            node->symbol = sym;
-            node->type = sym->type;
-
-        } else {
-            node->symbol->decl_linenum = 0;
-            node->type = ERROR;
-            fprintf(stderr, "Error: Undeclared symbol '%s' in line %d\n",
-                    node->symbol->name, node->linenum);
-        }
-    }
-    */
-
-    sym = symbol_lookup(symtab, node->symbol->name);
+    // O atributo 'decl_linenum' > 0 indica que o identificador referencia
+    // a declaracao de uma variavel/procedimento/funcao.
 
     if (sym == NULL) {
+
+        // Simbolo possui linha de declaracao: Insira na tabela de simbolos.
         if (node->symbol->decl_linenum > 0) {
             node->symbol->type = node->type;
             node->symbol->is_global = (symtab == global_symtab);
 
-            sym = symbol_insert(symtab, node->symbol);
+            node->symbol = symbol_insert(symtab, node->symbol);
 
+        // Sem linha de declaracao == eh fetch de variavel inexistente.
         } else {
-            node->type = ERROR;
+            node->symbol->type = node->type = ERROR;
             fprintf(stderr, "Error: Undeclared symbol '%s' in line %d\n",
                     node->symbol->name, node->linenum);
         }
 
+    // Simbolo encontrado na tabela e eh fetch: OK.
     } else if (node->symbol->decl_linenum == 0) {
         symbol_table_destroy(node->symbol);
         node->symbol = sym;
         node->type = sym->type;
 
+    // Simbolo possui linha de declaracao mas foi  encontrado na tabela:
+    // tentativa de redefinicao.
     } else {
-        node->type = ERROR;
+        node->symbol->type = node->type = ERROR;
         fprintf(stderr, "Error: Symbol '%s' already defined in line %d. "
                 "Check line %d.\n",
                 sym->name, sym->decl_linenum, node->linenum);

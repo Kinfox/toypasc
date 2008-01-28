@@ -205,7 +205,8 @@ graphprinter_visit_callparam_list (struct _Visitor *visitor, struct AstNode *nod
 {
     _print_arrow(node);
     printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
-    printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
+    printf("fillcolor="COLOR_FILL_COMMON",color=%s];\n",
+           (node->type == ERROR) ? COLOR_EDGE_ERROR : COLOR_EDGE_GROUP);
     ast_node_accept_children(node->children, visitor);
 }
 

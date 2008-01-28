@@ -196,7 +196,7 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
     int __process_binexpr_node(struct AstNode *node) {
         if (node->kind == IDENTIFIER) {
             if (node->symbol->is_global) {
-                if (node->symbol->is_procfunc)
+                if (symbol_is_procfunc(node->symbol))
                     return node->symbol->stack_index;
 
                 _print_load(node, visitor);
@@ -214,7 +214,7 @@ llvm_codegen_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
     void __print_operand(struct AstNode *node, int index) {
         if (index > -1)
             printf("%%%d", index);
-        else if (node->symbol != NULL && node->symbol->is_procfunc)
+        else if (node->symbol != NULL && symbol_is_procfunc(node->symbol))
             printf("0");
         else
             ast_node_accept(node, visitor);
@@ -396,7 +396,7 @@ llvm_codegen_visit_assignment_stmt (struct _Visitor *visitor, struct AstNode *no
     rindex = _process_expression(rnode, visitor);
 
     /* lnode */
-    if (lnode->symbol->is_global && !lnode->symbol->is_procfunc) {
+    if (lnode->symbol->is_global && !symbol_is_procfunc(lnode->symbol)) {
         printf(TAB"store ");
         PRINT_TYPE(lnode->type);
         printf(" ");

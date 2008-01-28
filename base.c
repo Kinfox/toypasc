@@ -26,8 +26,12 @@ type_get_lexeme(Type type)
             return "Boolean";
         case CHAR:
             return "Char";
+        case VOID:
+            return "void";
+        case ERROR:
+            return "Error";
         default:
-            return "NoneType";
+            return "";
     }
 }
 

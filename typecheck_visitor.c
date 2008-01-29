@@ -315,7 +315,10 @@ typecheck_visit_call (struct _Visitor *visitor, struct AstNode *node)
     node->type = ident->symbol->type;
 
     if (plist != NULL) {
+        // CallParamLists apontam para o simbolo da funcao chamada
+        // para obter a quantidade e os tipos esperados dos parametros.
         plist->symbol = ident->symbol;
+
         ast_node_accept(plist, visitor);
         params = plist->child_counter;
 

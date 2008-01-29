@@ -145,7 +145,6 @@ void
 typecheck_visit_parameter (struct _Visitor *visitor, struct AstNode *node)
 {
     node->children->type = node->type;
-    node->children->symbol->is_parameter = TRUE;
     node->children->symbol->decl_linenum = node->linenum;
     ast_node_accept(node->children, visitor);
 }

@@ -90,7 +90,8 @@ graphprinter_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
     printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=filled,",
            node, node->name, node->linenum);
     printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
-    ast_node_accept_children(node->children, visitor);
+    ast_node_accept(node->children, visitor);
+    printf("\tnode_%x -> symbol_%x [color=lightgray];\n", node->children, node->children->symbol);
 }
 
 void

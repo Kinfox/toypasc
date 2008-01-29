@@ -12,7 +12,6 @@ symbol_new(char const * name)
     symbol->params = -1;
     symbol->param_types = NULL;
     symbol->decl_linenum = 0;
-    symbol->is_parameter = FALSE;
     symbol->is_global = FALSE;
     symbol->stack_index = -1;
 

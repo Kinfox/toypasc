@@ -8,9 +8,11 @@ typedef struct _symbol {
     Type type;
     Value value;
     int decl_linenum;
+
+    // For procedures and functions
     int params;
     Type *param_types;
-    bool is_parameter;
+
     bool is_global;
     int stack_index;
     struct _symbol *next;

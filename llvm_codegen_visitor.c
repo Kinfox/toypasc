@@ -271,7 +271,7 @@ llvm_codegen_visit_identifier (struct _Visitor *visitor, struct AstNode *node)
     if (sym->is_global || node->parent->kind == CALL)
         printf("@%s", sym->name);
 
-    else if (!sym->is_global && sym->is_parameter &&
+    else if (!sym->is_global && node->parent->kind == PARAMETER &&
              sym->stack_index == -1)
         printf("%%%s", sym->name);
 

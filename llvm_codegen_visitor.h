@@ -7,7 +7,7 @@
 #define PRINT_TYPE(t)   if (t == VOID) printf("void"); \
                         else printf("i%d", _get_type_size(t))
 
-#define PRINT_VALUE(n, i)   if (n->kind == IDENTIFIER && n->symbol->is_parameter) \
+#define PRINT_VALUE(n, i)   if (n->kind == IDENTIFIER && n->parent->kind == PARAMETER) \
                             printf("%%%s", n->symbol->name); \
                             else { \
                             if (i == -1) printf("%d", ast_node_get_value_as_int(n)); \

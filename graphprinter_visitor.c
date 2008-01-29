@@ -3,7 +3,6 @@
 #include <string.h>
 #include "graphprinter_visitor.h"
 
-static bool is_symboldecl = FALSE;
 static void _print_arrow(struct AstNode *node);
 static void _print_symbol_table(struct AstNode *node);
 static void _print_symbols(Symbol *symbol);
@@ -87,7 +86,6 @@ graphprinter_visit_simplenode (struct _Visitor *visitor, struct AstNode *node)
 void
 graphprinter_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
 {
-    is_symboldecl = TRUE;
     _print_arrow(node);
     printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=filled,",
            node, node->name, node->linenum);
@@ -98,7 +96,6 @@ graphprinter_visit_programdecl(struct _Visitor *visitor, struct AstNode *node)
 void
 graphprinter_visit_vardecl_list (struct _Visitor *visitor, struct AstNode *node)
 {
-    is_symboldecl = TRUE;
     _print_arrow(node);
     printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
     printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
@@ -130,7 +127,6 @@ graphprinter_visit_procfunc_list (struct _Visitor *visitor, struct AstNode *node
 void
 graphprinter_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
 {
-    is_symboldecl = TRUE;
     _print_arrow(node);
     printf("\tnode_%x [label=\"%s\\n<%s>\\n[line: %d]\",style=filled,",
            node, node->name, type_get_lexeme(node->type), node->linenum);
@@ -145,7 +141,6 @@ graphprinter_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
 void
 graphprinter_visit_param_list (struct _Visitor *visitor, struct AstNode *node)
 {
-    is_symboldecl = TRUE;
     _print_arrow(node);
     printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
     printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
@@ -167,7 +162,6 @@ graphprinter_visit_parameter (struct _Visitor *visitor, struct AstNode *node)
 void
 graphprinter_visit_statement_list (struct _Visitor *visitor, struct AstNode *node)
 {
-    is_symboldecl = FALSE;
     _print_arrow(node);
     printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
     printf("color="COLOR_EDGE_GROUP",fillcolor="COLOR_FILL_COMMON"];\n");
@@ -190,23 +184,38 @@ graphprinter_visit_binary_expr (struct _Visitor *visitor, struct AstNode *node)
 void
 graphprinter_visit_call (struct _Visitor *visitor, struct AstNode *node)
 {
+    struct AstNode *ident = node->children;
+    struct AstNode *plist = ident->sibling;
+
     _print_arrow(node);
     printf("\tnode_%x [label=\"%s\\n[line: %d]\",style=filled,",
            node, node->name, node->linenum);
     printf("fillcolor="COLOR_FILL_COMMON",color=%s];\n",
            (node->type == ERROR) ? COLOR_EDGE_ERROR : COLOR_FILL_COMMON);
     printf("\nsubgraph cluster_%x {\n\tstyle=dotted;\n", node);
-    ast_node_accept_children(node->children, visitor);
+    ast_node_accept(ident, visitor);
+    ast_node_accept(plist, visitor);
     printf("}\n\n");
 }
 
 void
 graphprinter_visit_callparam_list (struct _Visitor *visitor, struct AstNode *node)
 {
+    int i;
+
     _print_arrow(node);
-    printf("\tnode_%x [label=\"%s\",style=filled,", node, node->name);
-    printf("fillcolor="COLOR_FILL_COMMON",color=%s];\n",
+    printf("\tnode_%x [label=\"%s\\n<", node, node->name);
+
+    for (i = 0; i < node->symbol->params; i++) {
+        printf("%s", type_get_lexeme(node->symbol->param_types[i]));
+        if (i + 1 < node->symbol->params)
+            printf(", ");
+    }
+
+
+    printf(">\",style=filled,fillcolor="COLOR_FILL_COMMON",color=%s];\n",
            (node->type == ERROR) ? COLOR_EDGE_ERROR : COLOR_EDGE_GROUP);
+
     ast_node_accept_children(node->children, visitor);
 }
 

@@ -20,14 +20,14 @@ char *
 type_get_lexeme(Type type)
 {
     switch (type) {
+        case VOID:
+            return "void";
         case INTEGER:
             return "Integer";
         case BOOLEAN:
             return "Boolean";
         case CHAR:
             return "Char";
-        case VOID:
-            return "void";
         case ERROR:
             return "Error";
         default:

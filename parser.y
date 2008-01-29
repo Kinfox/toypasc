@@ -822,7 +822,7 @@ main (int argc, char **argv)
     ast_node_accept(ast, visitor);
 
     if (ast_node_check_errors(ast)) {
-        fprintf(stderr, "Too many errors. Aborting.\n");
+        fprintf(stderr, "Too many errors to compile.\n");
         if (!graph_flag)
             return 1;
     }

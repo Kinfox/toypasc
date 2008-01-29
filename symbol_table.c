@@ -88,6 +88,14 @@ symbol_table_destroy(Symbol *symtab)
     }
 }
 
+void
+symbol_create_params(Symbol *symbol, int quantity)
+{
+    symbol->params = quantity;
+    if (quantity > 0)
+        symbol->param_types = (int *) malloc (sizeof(int) * quantity);
+}
+
 bool
 symbol_is_procfunc(Symbol *symbol)
 {

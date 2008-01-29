@@ -22,10 +22,11 @@ Symbol *symbol_new(char const * name);
 Symbol *symbol_lookup(Symbol *symtab, char const *name);
 Symbol *symbol_insert(Symbol *symtab, Symbol *symbol);
 
+void symbol_create_params(Symbol *symbol, int quantity);
 bool symbol_is_procfunc(Symbol *symbol);
+void symbol_print(Symbol *symbol);
 
 void symbol_table_destroy(Symbol *table);
 void symbol_table_dump(Symbol *table);
-void symbol_print(Symbol *symbol);
 
 #endif // SYMBOL_TABLE_H
